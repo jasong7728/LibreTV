@@ -252,12 +252,36 @@ function initializePageContent() {
     document.addEventListener('keydown', handleKeyboardShortcuts);
 
     // 添加页面离开事件监听，保存播放位置
-    window.addEventListener('beforeunload', saveCurrentProgress);
-
-    // 新增：页面隐藏（切后台/切标签）时也保存
+    window.addEventListener('beforeunload', saveCurrentProgress);    // 新增：页面隐藏（切后台/切标签）时也保存并暂停视频
     document.addEventListener('visibilitychange', function () {
         if (document.visibilityState === 'hidden') {
             saveCurrentProgress();
+            // 自动暂停视频
+            if (art && art.video && !art.video.paused) {
+                art.pause();
+                console.log('页面隐藏时自动暂停视频');
+            }
+        }
+    });
+
+    // 页面即将卸载时暂停视频
+    window.addEventListener('beforeunload', function() {
+        if (art && art.video && !art.video.paused) {
+            art.pause();
+            console.log('页面卸载时自动暂停视频');
+        }
+    });
+
+    // 页面失去焦点时暂停视频（适用于iframe）
+    window.addEventListener('blur', function() {
+        if (art && art.video && !art.video.paused) {
+            // 延迟暂停，避免临时失焦
+            setTimeout(() => {
+                if (document.visibilityState === 'hidden' && art && art.video && !art.video.paused) {
+                    art.pause();
+                    console.log('页面失焦时自动暂停视频');
+                }
+            }, 1000);
         }
     });
 
@@ -286,6 +310,45 @@ function handleKeyboardShortcuts(e) {
     // 忽略输入框中的按键事件
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
+    // H 键 = 显示快捷键帮助
+    if (e.key === 'h' || e.key === 'H') {
+        if (typeof showShortcutHelp === 'function') {
+            showShortcutHelp();
+        }
+        e.preventDefault();
+        return;
+    }
+
+    // N 键 = 下一集
+    if (e.key === 'n' || e.key === 'N') {
+        if (currentEpisodeIndex < currentEpisodes.length - 1) {
+            playNextEpisode();
+            showShortcutHint('下一集', 'right');
+            e.preventDefault();
+        }
+        return;
+    }
+
+    // P 键 = 上一集
+    if (e.key === 'p' || e.key === 'P') {
+        if (currentEpisodeIndex > 0) {
+            playPreviousEpisode();
+            showShortcutHint('上一集', 'left');
+            e.preventDefault();
+        }
+        return;
+    }
+
+    // M 键 = 静音切换
+    if (e.key === 'm' || e.key === 'M') {
+        if (art) {
+            art.muted = !art.muted;
+            showShortcutHint(art.muted ? '静音' : '取消静音', 'volume');
+            e.preventDefault();
+        }
+        return;
+    }
+
     // Alt + 左箭头 = 上一集
     if (e.altKey && e.key === 'ArrowLeft') {
         if (currentEpisodeIndex > 0) {
@@ -293,6 +356,7 @@ function handleKeyboardShortcuts(e) {
             showShortcutHint('上一集', 'left');
             e.preventDefault();
         }
+        return;
     }
 
     // Alt + 右箭头 = 下一集
@@ -302,60 +366,91 @@ function handleKeyboardShortcuts(e) {
             showShortcutHint('下一集', 'right');
             e.preventDefault();
         }
+        return;
     }
 
     // 左箭头 = 快退
     if (!e.altKey && e.key === 'ArrowLeft') {
-        if (art && art.currentTime > 5) {
-            art.currentTime -= 5;
-            showShortcutHint('快退', 'left');
+        if (art && art.currentTime > 10) {
+            art.currentTime -= 10;
+            showShortcutHint('快退 10秒', 'left');
             e.preventDefault();
         }
+        return;
     }
 
     // 右箭头 = 快进
     if (!e.altKey && e.key === 'ArrowRight') {
-        if (art && art.currentTime < art.duration - 5) {
-            art.currentTime += 5;
-            showShortcutHint('快进', 'right');
+        if (art && art.currentTime < art.duration - 10) {
+            art.currentTime += 10;
+            showShortcutHint('快进 10秒', 'right');
             e.preventDefault();
         }
+        return;
     }
 
     // 上箭头 = 音量+
     if (e.key === 'ArrowUp') {
         if (art && art.volume < 1) {
-            art.volume += 0.1;
-            showShortcutHint('音量+', 'up');
+            const newVolume = Math.min(1, art.volume + 0.1);
+            art.volume = newVolume;
+            showShortcutHint(`音量 ${Math.round(newVolume * 100)}%`, 'up');
             e.preventDefault();
         }
+        return;
     }
 
     // 下箭头 = 音量-
     if (e.key === 'ArrowDown') {
         if (art && art.volume > 0) {
-            art.volume -= 0.1;
-            showShortcutHint('音量-', 'down');
+            const newVolume = Math.max(0, art.volume - 0.1);
+            art.volume = newVolume;
+            showShortcutHint(`音量 ${Math.round(newVolume * 100)}%`, 'down');
             e.preventDefault();
         }
+        return;
     }
 
     // 空格 = 播放/暂停
     if (e.key === ' ') {
         if (art) {
             art.toggle();
-            showShortcutHint('播放/暂停', 'play');
+            showShortcutHint(art.playing ? '暂停' : '播放', 'play');
             e.preventDefault();
         }
+        return;
     }
 
     // f 键 = 切换全屏
     if (e.key === 'f' || e.key === 'F') {
         if (art) {
             art.fullscreen = !art.fullscreen;
-            showShortcutHint('切换全屏', 'fullscreen');
+            showShortcutHint(art.fullscreen ? '进入全屏' : '退出全屏', 'fullscreen');
             e.preventDefault();
         }
+        return;
+    }
+
+    // 数字键 1-9 = 跳转到对应百分比位置
+    if (/^[1-9]$/.test(e.key)) {
+        if (art && art.duration) {
+            const percentage = parseInt(e.key) * 10;
+            const newTime = (art.duration * percentage) / 100;
+            art.currentTime = newTime;
+            showShortcutHint(`跳转到 ${percentage}%`, 'seek');
+            e.preventDefault();
+        }
+        return;
+    }
+
+    // 0 键 = 跳转到开头
+    if (e.key === '0') {
+        if (art) {
+            art.currentTime = 0;
+            showShortcutHint('跳转到开头', 'seek');
+            e.preventDefault();
+        }
+        return;
     }
 }
 

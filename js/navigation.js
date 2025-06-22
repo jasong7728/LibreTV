@@ -283,6 +283,20 @@ function resetToHome() {
     }
 }
 
+// 显示视频播放器（兼容函数）
+function showVideoPlayer(playerUrl) {
+    if (typeof switchView === 'function') {
+        // 在播放器界面显示
+        switchView('player');
+        setTimeout(() => {
+            showEmbeddedPlayer(playerUrl, document.title);
+        }, 100);
+    } else {
+        // 跳转到播放器页面
+        window.location.href = playerUrl;
+    }
+}
+
 // 覆盖原有的toggleHistory和toggleSettings函数
 function toggleHistory(e) {
     if (e) e.stopPropagation();

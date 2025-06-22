@@ -254,15 +254,56 @@
                                 </div>
                                 <p class="text-gray-400">优化加载速度，流畅的观影体验</p>
                             </div>
-                        </div>
-
-                        <div class="text-center mt-8">
-                            <p class="text-gray-400 text-sm">
+                        </div>                        <div class="text-center mt-8">
+                            <p class="text-gray-400 text-sm mb-4">
                                 免责声明：本站仅为视频搜索工具，不存储、上传或分发任何视频内容。<br>
                                 所有视频均来自第三方API接口。如有侵权，请联系相关内容提供方。
                             </p>
-                            <div class="mt-4 flex justify-center space-x-4">
+                            <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mb-6">
                                 <a href="https://www.msf.hk/zh-hant/donate/general?type=one-off" target="_blank" rel="noopener" class="text-blue-400 hover:text-blue-300 text-sm transition-colors">捐赠支持</a>
+                                <a href="https://github.com/bestzwei/LibreTV-Project" target="_blank" rel="noopener" class="text-green-400 hover:text-green-300 text-sm transition-colors">GitHub 源码</a>
+                            </div>
+                            
+                            <!-- 版本信息详情 -->
+                            <div class="bg-[#1a1a1a] border border-[#333] rounded-xl p-6 mt-6">
+                                <h4 class="text-lg font-bold text-white mb-4 flex items-center justify-center">
+                                    <svg class="w-5 h-5 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    系统信息
+                                </h4>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">当前版本:</span>
+                                        <span class="text-white" id="currentVersion">加载中...</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">发布日期:</span>
+                                        <span class="text-white" id="releaseDate">加载中...</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">部署方式:</span>
+                                        <span class="text-white" id="deploymentType">检测中...</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">API 数量:</span>
+                                        <span class="text-white" id="apiCount">计算中...</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">浏览器:</span>
+                                        <span class="text-white" id="browserInfo">检测中...</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">启动时间:</span>
+                                        <span class="text-white" id="uptime">计算中...</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4 pt-4 border-t border-[#333] flex flex-col sm:flex-row justify-between items-center gap-2">
+                                    <button onclick="checkForUpdates()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors">
+                                        检查更新
+                                    </button>
+                                    <span class="text-gray-500 text-xs">© 2025 LibreTV - 自由观影，畅享精彩</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -369,32 +410,7 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </main>
-
-    <!-- 页脚区域 -->
-    <footer class="footer mt-8 py-6 border-t border-[#333] bg-[#0a0a0a] ml-16">
-        <div class="container mx-auto px-4">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="mb-4 md:mb-0">
-                    <div class="flex items-center justify-center md:justify-start">
-                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                        </svg>
-                        <span class="gradient-text font-bold">LibreTV</span>
-                    </div>
-                    <p class="text-gray-500 text-sm mt-2 text-center md:text-left">© 2025 LibreTV - 自由观影，畅享精彩</p>
-                </div>
-                
-                <div class="text-center md:text-right">
-                    <p class="text-gray-500 text-sm max-w-md">
-                        免责声明：本站仅为视频搜索工具，不存储、上传或分发任何视频内容。
-                        所有视频均来自第三方API接口。如有侵权，请联系相关内容提供方。
-                    </p>
-                </div>
-            </div>
-        </div>
-    </footer>
+        </div>    </main>
 
     <!-- 详情模态框 -->
     <div id="modal" class="fixed inset-0 bg-black/95 hidden flex items-center justify-center transition-opacity duration-300 z-40">
@@ -509,10 +525,75 @@
         // PASSWORD 变量将在这里被服务器端注入
         window.__ENV__.PASSWORD = "{{PASSWORD}}";
         window.__ENV__.ADMINPASSWORD = "{{ADMINPASSWORD}}";
-    </script>
+    </script>    <!-- 版本检查脚本 - 集成到关于界面 -->
+    <script>
+        // 版本检查相关函数 - 仅在关于界面使用
+        async function fetchVersion(url, errorMessage, options = {}) {
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                throw new Error(errorMessage);
+            }
+            return await response.text();
+        }
 
-    <!-- 版本检测脚本 -->
-    <script src="js/version-check.js"></script>
+        // 版本检查函数 - 仅在关于界面调用
+        async function checkVersionForAbout() {
+            const currentVersionEl = document.getElementById('currentVersion');
+            if (!currentVersionEl) return;
+            
+            try {
+                // 获取当前版本
+                const currentVersion = await fetchVersion('/VERSION.txt', '获取当前版本失败', {
+                    cache: 'no-store'
+                });
+                
+                currentVersionEl.textContent = currentVersion.trim();
+                
+                // 检查更新（可选，不显示通知）
+                try {
+                    const VERSION_URL = {
+                        PROXY: 'https://raw.ihtw.moe/raw.githubusercontent.com/LibreSpark/LibreTV/main/VERSION.txt',
+                        DIRECT: 'https://raw.githubusercontent.com/LibreSpark/LibreTV/main/VERSION.txt'
+                    };
+                    const FETCH_TIMEOUT = 3000;
+                    
+                    let latestVersion;
+                    try {
+                        const proxyPromise = fetchVersion(VERSION_URL.PROXY, '代理请求失败');
+                        const timeoutPromise = new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('代理请求超时')), FETCH_TIMEOUT)
+                        );
+                        latestVersion = await Promise.race([proxyPromise, timeoutPromise]);
+                    } catch {
+                        latestVersion = await fetchVersion(VERSION_URL.DIRECT, '直接请求失败');
+                    }
+                    
+                    if (latestVersion && latestVersion.trim() !== currentVersion.trim()) {
+                        currentVersionEl.innerHTML = `${currentVersion.trim()} <span class="text-yellow-400 text-xs">(有新版本: ${latestVersion.trim()})</span>`;
+                    }
+                } catch (e) {
+                    console.log('检查更新失败:', e.message);
+                }
+            } catch (error) {
+                currentVersionEl.textContent = '获取版本信息失败';
+                console.error('版本检查失败:', error);
+            }
+        }
+        
+        // 在切换到关于界面时检查版本
+        document.addEventListener('DOMContentLoaded', function() {
+            // 监听视图切换，在关于界面时检查版本
+            const originalSwitchView = window.switchView;
+            if (originalSwitchView) {
+                window.switchView = function(viewName) {
+                    originalSwitchView(viewName);
+                    if (viewName === 'about') {
+                        setTimeout(checkVersionForAbout, 100);
+                    }
+                };
+            }
+        });
+    </script>
 
     <!-- 添加弹窗和URL搜索参数处理脚本 -->
     <script src="js/index-page.js"></script>

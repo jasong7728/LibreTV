@@ -51,7 +51,7 @@ function saveUserTags() {
 let doubanMovieTvCurrentSwitch = 'movie';
 let doubanCurrentTag = '热门';
 let doubanPageStart = 0;
-const doubanPageSize = 16; // 一次显示的项目数量
+const doubanPageSize = 200; // 豆瓣界面加载更多内容
 
 // 初始化豆瓣功能
 function initDouban() {
@@ -313,10 +313,10 @@ function setupDoubanRefreshBtn() {
     // 修复ID，使用正确的ID douban-refresh 而不是 douban-refresh-btn
     const btn = document.getElementById('douban-refresh');
     if (!btn) return;
-    
-    btn.onclick = function() {
+      btn.onclick = function() {
         doubanPageStart += doubanPageSize;
-        if (doubanPageStart > 9 * doubanPageSize) {
+        // 由于现在一次加载200个，只需要循环几次
+        if (doubanPageStart > 3 * doubanPageSize) {
             doubanPageStart = 0;
         }
         
