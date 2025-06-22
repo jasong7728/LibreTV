@@ -11,10 +11,10 @@ class Router {
         window.addEventListener('hashchange', () => this.handleRoute());
         // 监听页面加载
         window.addEventListener('load', () => this.handleRoute());
-        
-        // 注册默认路由
+          // 注册默认路由
         this.register('search', () => this.showView('searchView'));
         this.register('douban', () => this.showView('doubanView'));
+        this.register('history', () => this.showView('historyView'));
         this.register('player', () => this.showView('playerView'));
         this.register('settings', () => this.showView('settingsView'));
         this.register('about', () => this.showView('aboutView'));

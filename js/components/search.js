@@ -11,7 +11,6 @@ class SearchComponent {
         this.loadSettings();
         this.bindEvents();
         this.renderSearchHistory();
-        this.renderViewingHistory(); // 添加观看历史渲染
         this.setupSearchInput();
         
         // 监听视图激活
@@ -61,12 +60,6 @@ class SearchComponent {
             clearHistoryBtn.addEventListener('click', () => this.clearSearchHistory());
         }
 
-        // 清空观看历史按钮
-        const clearViewingHistoryBtn = document.getElementById('clearViewingHistoryBtn');
-        if (clearViewingHistoryBtn) {
-            clearViewingHistoryBtn.addEventListener('click', () => this.clearViewingHistory());
-        }
-
         // 返回搜索按钮
         const backToSearchBtn = document.getElementById('backToSearchBtn');
         if (backToSearchBtn) {
@@ -89,7 +82,6 @@ class SearchComponent {
     }    onViewActivated() {
         // 搜索视图激活时的处理
         this.updateClearButton();
-        this.renderViewingHistory(); // 刷新观看历史显示
         
         // 如果有URL参数，执行搜索
         const urlParams = window.router.getQueryParams();
@@ -553,113 +545,15 @@ class SearchComponent {
     }
 
     clearSearchHistory() {
+        if (!confirm('确定要清空搜索历史吗？')) return;
+        
         try {
-            localStorage.removeItem(SEARCH_HISTORY_KEY);
+            localStorage.removeItem('searchHistory');
             this.searchHistory = [];
             this.renderSearchHistory();
             window.ui.showToast('搜索历史已清空', 'success');
         } catch (e) {
             window.ui.showToast('清空失败', 'error');
-        }
-    }
-
-    // 清空观看历史
-    clearViewingHistory() {
-        try {
-            localStorage.removeItem('viewingHistory');
-            this.renderViewingHistory();
-            window.ui.showToast('观看历史已清空', 'success');
-        } catch (e) {
-            window.ui.showToast('清空失败', 'error');
-        }
-    }
-
-    // 渲染观看历史
-    renderViewingHistory() {
-        const historyContainer = document.getElementById('viewingHistory');
-        if (!historyContainer) return;
-        
-        const history = this.getViewingHistory();
-        
-        if (history.length === 0) {
-            historyContainer.innerHTML = '<p class="text-sm text-gray-500">暂无观看历史</p>';
-            return;
-        }
-        
-        historyContainer.innerHTML = history.slice(0, 10).map(item => `
-            <div class="history-item flex items-center p-3 bg-[#111] rounded-lg hover:bg-[#222] transition-colors cursor-pointer"
-                 data-history='${JSON.stringify(item)}'
-                 onclick="window.search.playFromHistory('${item.id}', '${item.source}', '${item.title.replace(/'/g, "\\'")}', ${item.episodeIndex || 0}, ${item.position || 0})">
-                <div class="flex-1">
-                    <h4 class="text-sm font-medium text-white line-clamp-1">${item.title}</h4>
-                    <p class="text-xs text-gray-400 mt-1">
-                        第${(item.episodeIndex || 0) + 1}集 · ${this.formatTime(item.position || 0)}
-                    </p>
-                    <p class="text-xs text-gray-500">${this.formatDate(item.timestamp)}</p>
-                </div>
-                <div class="ml-2">
-                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    // 获取观看历史
-    getViewingHistory() {
-        try {
-            return JSON.parse(localStorage.getItem('viewingHistory') || '[]');
-        } catch (e) {
-            console.error('获取观看历史失败:', e);
-            return [];
-        }
-    }
-
-    // 从观看历史播放
-    playFromHistory(id, source, title, episodeIndex = 0, position = 0) {
-        // 构建播放器URL参数
-        const params = new URLSearchParams({
-            title: title,
-            source: source,
-            id: id,
-            index: episodeIndex.toString(),
-            time: position.toString()
-        });
-        
-        // 跳转到播放器界面
-        window.router.navigate(`player?${params.toString()}`);
-    }
-
-    // 格式化时间
-    formatTime(seconds) {
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        const secs = Math.floor(seconds % 60);
-        
-        if (hours > 0) {
-            return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        } else {
-            return `${minutes}:${secs.toString().padStart(2, '0')}`;
-        }
-    }
-
-    // 格式化日期
-    formatDate(timestamp) {
-        const date = new Date(timestamp);
-        const now = new Date();
-        const diff = now - date;
-        
-        if (diff < 60000) { // 1分钟内
-            return '刚刚';
-        } else if (diff < 3600000) { // 1小时内
-            return `${Math.floor(diff / 60000)}分钟前`;
-        } else if (diff < 86400000) { // 24小时内
-            return `${Math.floor(diff / 3600000)}小时前`;
-        } else if (diff < 604800000) { // 7天内
-            return `${Math.floor(diff / 86400000)}天前`;
-        } else {            return date.toLocaleDateString();
         }
     }
 }

@@ -1008,19 +1008,36 @@ body {
     gap: 0.5rem;
 }
 
-/* 移动端优化 */
-@media (max-width: 640px) {
-    #modal .detail-grid {
-        gap: 0.5rem;
-        font-size: 0.8rem;
-    }
-    
-    #modal .detail-label {
-        min-width: 2.5rem;
-    }
-    
-    #modal .detail-desc-content {
-        max-height: 6rem;
-        font-size: 0.8rem;
-    }
+/* 侧边栏导航按钮样式 */
+.nav-item {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    outline: none;
+    text-decoration: none;
+}
+
+.nav-item:hover {
+    text-decoration: none;
+}
+
+.nav-item.active {
+    background-color: #1a2332;
+    color: #00ccff;
+}
+
+.nav-item.active svg {
+    color: #00ccff;
+}
+
+/* 确保按钮文本左对齐 */
+.nav-item.text-left {
+    text-align: left;
+}
+
+button.nav-item {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
 }

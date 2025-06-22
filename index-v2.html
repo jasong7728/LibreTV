@@ -26,49 +26,56 @@
                 </svg>
                 <h1 class="text-xl font-bold gradient-text">LibreTV</h1>
             </div>
-            
-            <!-- 导航菜单 -->
+              <!-- 导航菜单 -->
             <ul class="space-y-2">
                 <li>
-                    <a href="#/search" class="nav-item active flex items-center p-3 rounded-lg hover:bg-[#1a2332] transition-colors" data-route="search">
+                    <button class="nav-item active flex items-center p-3 rounded-lg hover:bg-[#1a2332] transition-colors w-full text-left" data-route="search">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
                         搜索
-                    </a>
+                    </button>
                 </li>
                 <li>
-                    <a href="#/douban" class="nav-item flex items-center p-3 rounded-lg hover:bg-[#1a2332] transition-colors" data-route="douban">
+                    <button class="nav-item flex items-center p-3 rounded-lg hover:bg-[#1a2332] transition-colors w-full text-left" data-route="douban">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                         </svg>
                         豆瓣热门
-                    </a>
+                    </button>
                 </li>
                 <li>
-                    <a href="#/player" class="nav-item flex items-center p-3 rounded-lg hover:bg-[#1a2332] transition-colors" data-route="player">
+                    <button class="nav-item flex items-center p-3 rounded-lg hover:bg-[#1a2332] transition-colors w-full text-left" data-route="history">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        观看历史
+                    </button>
+                </li>
+                <li>
+                    <button class="nav-item flex items-center p-3 rounded-lg hover:bg-[#1a2332] transition-colors w-full text-left" data-route="player">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
                         </svg>
                         播放器
-                    </a>
+                    </button>
                 </li>
                 <li>
-                    <a href="#/settings" class="nav-item flex items-center p-3 rounded-lg hover:bg-[#1a2332] transition-colors" data-route="settings">
+                    <button class="nav-item flex items-center p-3 rounded-lg hover:bg-[#1a2332] transition-colors w-full text-left" data-route="settings">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                         </svg>
                         设置
-                    </a>
+                    </button>
                 </li>
                 <li>
-                    <a href="#/about" class="nav-item flex items-center p-3 rounded-lg hover:bg-[#1a2332] transition-colors" data-route="about">
+                    <button class="nav-item flex items-center p-3 rounded-lg hover:bg-[#1a2332] transition-colors w-full text-left" data-route="about">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                         关于
-                    </a>
+                    </button>
                 </li>
             </ul>
         </div>
@@ -115,25 +122,14 @@
                             <button id="searchBtn" class="absolute right-2 top-1/2 -translate-y-1/2 bg-[#00ccff] hover:bg-[#33d6ff] text-black px-6 py-2 rounded-lg transition-colors font-medium">
                                 搜索
                             </button>
-                        </div>
-                          <!-- 搜索历史和观看历史 -->
-                        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- 搜索历史 -->
+                        </div>                          <!-- 搜索历史 -->
+                        <div class="mt-4">
                             <div id="searchHistoryArea">
                                 <div class="flex justify-between items-center mb-2">
                                     <span class="text-sm text-gray-400">最近搜索</span>
                                     <button id="clearHistoryBtn" class="text-xs text-gray-500 hover:text-gray-300">清空</button>
                                 </div>
                                 <div id="searchHistory" class="flex flex-wrap gap-2 min-h-[2rem]"></div>
-                            </div>
-                            
-                            <!-- 观看历史 -->
-                            <div id="viewingHistoryArea">
-                                <div class="flex justify-between items-center mb-2">
-                                    <span class="text-sm text-gray-400">观看历史</span>
-                                    <button id="clearViewingHistoryBtn" class="text-xs text-gray-500 hover:text-gray-300">清空</button>
-                                </div>
-                                <div id="viewingHistory" class="space-y-2 max-h-60 overflow-y-auto"></div>
                             </div>
                         </div>
                     </div>
@@ -179,6 +175,22 @@
                     <button id="loadMoreBtn" class="bg-[#00ccff] hover:bg-[#33d6ff] text-black px-8 py-3 rounded-lg transition-colors font-medium">
                         加载更多
                     </button>
+                </div>
+            </div>        </div>
+
+        <!-- 观看历史界面 -->
+        <div id="historyView" class="view-content hidden p-6">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">观看历史</h2>
+                    <button id="clearAllHistoryBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors">
+                        清空所有历史
+                    </button>
+                </div>
+                
+                <!-- 历史记录列表 -->
+                <div id="historyList" class="space-y-4">
+                    <!-- 历史记录项将在这里动态生成 -->
                 </div>
             </div>
         </div>
@@ -368,14 +380,12 @@
     <script src="js/components/sidebar.js"></script>
     <script src="js/components/search.js"></script>
     <script src="js/components/douban.js"></script>
-    <script src="js/components/player.js"></script>
-    <script src="js/components/settings.js"></script>
+    <script src="js/components/player.js"></script>    <script src="js/components/settings.js"></script>
     <script src="js/components/about.js"></script>
+    <script src="js/components/history.js"></script>
     <script src="js/password.js"></script>
     <script src="js/pwa-register.js"></script>
-    <script src="js/app.js"></script>
-
-    <!-- 环境变量注入脚本 -->
+    <script src="js/app.js"></script>    <!-- 环境变量注入脚本 -->
     <script>
         // 创建全局环境变量对象
         window.__ENV__ = window.__ENV__ || {};
@@ -383,6 +393,35 @@
         // 注入服务器端环境变量 (将由服务器端替换)
         window.__ENV__.PASSWORD = "{{PASSWORD}}";
         window.__ENV__.ADMINPASSWORD = "{{ADMINPASSWORD}}";
+    </script>
+
+    <!-- V2.1 组件初始化 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化路由器
+            window.router = new Router();
+            
+            // 初始化侧边栏
+            window.sidebar = new SidebarComponent();
+            
+            // 初始化播放器组件
+            window.player = new PlayerComponent();
+            
+            // 初始化观看历史组件
+            window.history = new HistoryComponent(window.router, window.player);
+            
+            // 初始化豆瓣组件
+            window.douban = new DoubanComponent();
+            
+            // 初始化设置组件
+            window.settings = new SettingsComponent();
+            
+            // 初始化关于组件
+            window.about = new AboutComponent();
+            
+            // 启动路由器
+            window.router.init();
+        });
     </script>
 
     <!-- JSON-LD 结构化数据 -->

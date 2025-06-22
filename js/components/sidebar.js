@@ -1,5 +1,5 @@
 // LibreTV V2.0 侧边栏组件
-class Sidebar {
+class SidebarComponent {
     constructor() {
         this.isOpen = false;
         this.init();
@@ -168,4 +168,4 @@ class Sidebar {
 }
 
 // 创建全局侧边栏实例
-window.sidebar = new Sidebar();
+window.SidebarComponent = SidebarComponent;

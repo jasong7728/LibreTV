@@ -185,6 +185,11 @@ app.get('/proxy/:encodedUrl', async (req, res) => {
   }
 });
 
+// 根路径重定向到V2版本
+app.get('/', (req, res) => {
+  res.redirect('/index-v2.html');
+});
+
 app.use(express.static(path.join(__dirname), {
   maxAge: config.cacheMaxAge
 }));

@@ -576,84 +576,46 @@ class PlayerComponent {
             clearInterval(this.progressSaveInterval);
             this.progressSaveInterval = null;
         }
-    }
-
-    saveCurrentProgress() {
+    }    saveCurrentProgress() {
         if (!this.currentVideo || !this.artPlayer) return;
 
-        const progressData = {
-            id: this.currentVideo.id,
-            source: this.currentVideo.source,
+        const videoData = {
             title: this.currentVideo.title,
-            episodeIndex: this.currentEpisodeIndex,
-            position: this.playbackPosition,
-            timestamp: Date.now()
+            url: this.currentVideo.detail?.vod_play_url || '',
+            poster: this.currentVideo.detail?.vod_pic,
+            episodeName: this.currentEpisodes[this.currentEpisodeIndex] || `第${this.currentEpisodeIndex + 1}集`,
+            currentTime: this.playbackPosition,
+            duration: this.artPlayer.duration,
+            episodes: this.currentEpisodes
         };
 
-        try {
-            let viewingHistory = JSON.parse(localStorage.getItem('viewingHistory') || '[]');
-            
-            // 移除旧记录
-            viewingHistory = viewingHistory.filter(item => 
-                !(item.id === this.currentVideo.id && item.source === this.currentVideo.source)
-            );
-            
-            // 添加新记录到开头
-            viewingHistory.unshift(progressData);
-            
-            // 限制历史记录数量
-            if (viewingHistory.length > 50) {
-                viewingHistory = viewingHistory.slice(0, 50);
-            }
-            
-            localStorage.setItem('viewingHistory', JSON.stringify(viewingHistory));
-        } catch (e) {
-            console.error('保存播放进度失败:', e);
+        // 使用HistoryComponent来更新进度
+        if (window.history) {
+            window.history.updateProgress(videoData);
         }
-    }
-
-    saveToHistory() {
+    }    saveToHistory() {
         if (!this.currentVideo) return;
 
-        const historyItem = {
-            id: this.currentVideo.id,
-            source: this.currentVideo.source,
+        const videoData = {
             title: this.currentVideo.title,
-            cover: this.currentVideo.detail?.vod_pic,
-            episodeIndex: this.currentEpisodeIndex,
-            position: 0,
-            timestamp: Date.now()
+            url: this.currentVideo.detail?.vod_play_url || '',
+            poster: this.currentVideo.detail?.vod_pic,
+            episodeName: this.currentEpisodes[this.currentEpisodeIndex] || `第${this.currentEpisodeIndex + 1}集`,
+            currentTime: 0,
+            duration: 0,
+            episodes: this.currentEpisodes
         };
 
-        try {
-            let viewingHistory = JSON.parse(localStorage.getItem('viewingHistory') || '[]');
-            
-            // 移除重复记录
-            viewingHistory = viewingHistory.filter(item => 
-                !(item.id === this.currentVideo.id && item.source === this.currentVideo.source)
-            );
-            
-            // 添加到开头
-            viewingHistory.unshift(historyItem);
-            
-            // 限制数量
-            if (viewingHistory.length > 50) {
-                viewingHistory = viewingHistory.slice(0, 50);
-            }
-            
-            localStorage.setItem('viewingHistory', JSON.stringify(viewingHistory));
-        } catch (e) {
-            console.error('保存观看历史失败:', e);
+        // 使用HistoryComponent来保存历史
+        if (window.history) {
+            window.history.addToHistory(videoData);
         }
-    }
-
-    // 获取观看历史
+    }    // 获取观看历史
     getViewingHistory() {
-        try {
-            return JSON.parse(localStorage.getItem('viewingHistory') || '[]');
-        } catch (e) {
-            return [];
+        if (window.history) {
+            return window.history.getHistory();
         }
+        return [];
     }
 
     // 从历史记录播放
