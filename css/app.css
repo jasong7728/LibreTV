@@ -1,0 +1,517 @@
+/* 
+LibreTV V2.0 统一样式文件
+统合所有页面样式，提供一致的UI体验
+*/
+
+:root {
+    /* 主题色彩系统 */
+    --primary-color: #00ccff;       /* 霓虹蓝主色调 */
+    --primary-light: #33d6ff;       /* 浅霓虹蓝变体 */
+    --secondary-color: #0f1622;     /* 深蓝黑背景色 */
+    --accent-color: #ff3c78;        /* 霓虹粉强调色 */
+    --text-color: #e6f2ff;          /* 柔和的蓝白色文本 */
+    --text-muted: #8599b2;          /* 淡蓝灰色次级文本 */
+    --border-color: rgba(0, 204, 255, 0.15);
+    --page-gradient-start: #0f1622; /* 深蓝黑起始色 */
+    --page-gradient-end: #192231;   /* 深靛蓝结束色 */
+    --card-gradient-start: #121b29; /* 卡片起始色 */
+    --card-gradient-end: #1c2939;   /* 卡片结束色 */
+    --card-accent: rgba(0, 204, 255, 0.12); /* 霓虹蓝卡片强调色 */
+    --card-hover-border: rgba(0, 204, 255, 0.5); /* 悬停边框颜色 */
+    
+    /* 侧边栏相关 */
+    --sidebar-width: 16rem; /* 256px */
+}
+
+/* 基础样式重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+}
+
+/* 页面背景 */
+.page-bg {
+    background: linear-gradient(180deg, var(--page-gradient-start), var(--page-gradient-end));
+    min-height: 100vh;
+    /* 柔和赛博点状背景 */
+    background-image: 
+        linear-gradient(180deg, var(--page-gradient-start), var(--page-gradient-end)),
+        radial-gradient(circle at 25px 25px, rgba(0, 204, 255, 0.04) 2px, transparent 3px),
+        radial-gradient(circle at 75px 75px, rgba(255, 60, 120, 0.02) 1px, transparent 2px),
+        radial-gradient(circle at 50px 50px, rgba(150, 255, 250, 0.015) 1px, transparent 2px);
+    background-blend-mode: normal;
+    background-size: cover, 100px 100px, 50px 50px, 75px 75px;
+}
+
+/* 渐变文本 */
+.gradient-text {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* 侧边栏样式 */
+#sidebar {
+    background: linear-gradient(180deg, var(--secondary-color), #1a2332);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid var(--border-color);
+}
+
+/* 导航项样式 */
+.nav-item {
+    transition: all 0.3s ease;
+    border-radius: 0.5rem;
+    position: relative;
+}
+
+.nav-item:hover {
+    background: rgba(0, 204, 255, 0.1);
+    transform: translateX(4px);
+}
+
+.nav-item.active {
+    background: linear-gradient(135deg, rgba(0, 204, 255, 0.2), rgba(0, 204, 255, 0.1));
+    border-left: 3px solid var(--primary-color);
+}
+
+.nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: -1px;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
+    border-radius: 0 2px 2px 0;
+}
+
+/* 视图内容样式 */
+.view-content {
+    transition: all 0.3s ease;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 卡片样式 */
+.card-hover {
+    border: 1px solid var(--border-color);
+    background: linear-gradient(135deg, var(--card-gradient-start), var(--card-gradient-end));
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+    transform: translateY(-4px);
+    border-color: var(--card-hover-border);
+    box-shadow: 0 12px 24px rgba(0, 204, 255, 0.2);
+}
+
+/* 按钮样式 */
+button {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: none;
+    outline: none;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 主要按钮 */
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+    color: #000;
+    font-weight: 600;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0, 204, 255, 0.3);
+}
+
+/* 输入框样式 */
+input[type="text"],
+input[type="password"],
+textarea,
+select {
+    background: #111;
+    border: 2px solid #333;
+    color: white;
+    border-radius: 8px;
+    padding: 12px 16px;
+    transition: all 0.3s ease;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+textarea:focus,
+select:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 204, 255, 0.1);
+}
+
+/* 开关样式 */
+.toggle-switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: #374151;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.toggle-switch.active {
+    background: var(--primary-color);
+}
+
+.toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.toggle-switch.active::after {
+    transform: translateX(20px);
+}
+
+/* 模态框样式 */
+.modal {
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    background: linear-gradient(135deg, #111, #0a0a0a);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+}
+
+/* Toast样式 */
+#toast {
+    border-radius: 8px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Loading样式 */
+#loading {
+    backdrop-filter: blur(4px);
+}
+
+/* 搜索区域样式 */
+#searchArea {
+    transition: all 0.5s ease;
+}
+
+#searchArea.compact {
+    margin-bottom: 2rem !important;
+}
+
+#searchArea.compact .text-center {
+    display: none;
+}
+
+/* 搜索结果网格 */
+#results {
+    gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    #results {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+
+/* 豆瓣热门网格 */
+#douban-content {
+    gap: 1rem;
+}
+
+/* 播放器样式 */
+#playerContainer {
+    position: relative;
+    background: #000;
+}
+
+#videoPlayer {
+    width: 100%;
+    height: 100%;
+}
+
+/* 剧集面板 */
+#episodePanel {
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(20px);
+    border-left: 1px solid var(--border-color);
+}
+
+#episodeList button {
+    background: #222;
+    border: 1px solid #333;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+#episodeList button:hover {
+    background: var(--primary-color);
+    color: #000;
+}
+
+#episodeList button.active {
+    background: var(--primary-color);
+    color: #000;
+    border-color: var(--primary-color);
+}
+
+/* 设置页面样式 */
+#apiCheckboxes {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+#apiCheckboxes::-webkit-scrollbar {
+    width: 6px;
+}
+
+#apiCheckboxes::-webkit-scrollbar-track {
+    background: #222;
+    border-radius: 3px;
+}
+
+#apiCheckboxes::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 3px;
+}
+
+#apiCheckboxes::-webkit-scrollbar-thumb:hover {
+    background: #777;
+}
+
+/* 复选框样式 */
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.checkbox-container:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.checkbox-container input[type="checkbox"] {
+    margin-right: 8px;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary-color);
+}
+
+/* 标签样式 */
+.tag {
+    display: inline-block;
+    padding: 4px 8px;
+    background: rgba(0, 204, 255, 0.1);
+    color: var(--primary-color);
+    border-radius: 4px;
+    font-size: 12px;
+    border: 1px solid rgba(0, 204, 255, 0.2);
+}
+
+.tag.active {
+    background: var(--primary-color);
+    color: #000;
+}
+
+/* 文本截断 */
+.line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #777;
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+    :root {
+        --sidebar-width: 14rem;
+    }
+}
+
+@media (max-width: 768px) {
+    #sidebar {
+        width: 100%;
+        max-width: 280px;
+    }
+    
+    #mainContent {
+        margin-left: 0;
+    }
+    
+    .view-content {
+        padding: 1rem;
+    }
+    
+    .modal-content {
+        margin: 1rem;
+        max-height: calc(100vh - 2rem);
+    }
+}
+
+/* 辅助类 */
+.hidden {
+    display: none !important;
+}
+
+.invisible {
+    visibility: hidden;
+}
+
+.opacity-0 {
+    opacity: 0;
+}
+
+.opacity-100 {
+    opacity: 1;
+}
+
+.pointer-events-none {
+    pointer-events: none;
+}
+
+.select-none {
+    user-select: none;
+}
+
+/* 动画类 */
+.fade-in {
+    animation: fadeIn 0.3s ease;
+}
+
+.slide-in-left {
+    animation: slideInLeft 0.3s ease;
+}
+
+.slide-in-right {
+    animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* 特殊效果 */
+.glow {
+    box-shadow: 0 0 20px rgba(0, 204, 255, 0.3);
+}
+
+.blur {
+    filter: blur(4px);
+}
+
+/* 打印样式 */
+@media print {
+    #sidebar,
+    .no-print {
+        display: none !important;
+    }
+    
+    #mainContent {
+        margin-left: 0 !important;
+    }
+    
+    .page-bg {
+        background: white !important;
+    }
+    
+    * {
+        color: black !important;
+    }
+}
