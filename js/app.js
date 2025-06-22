@@ -517,29 +517,6 @@ function setupEventListeners() {
         }
     });
 
-    // 点击外部关闭设置面板和历史记录面板
-    document.addEventListener('click', function (e) {
-        // 关闭设置面板
-        const settingsPanel = document.querySelector('#settingsPanel.show');
-        const settingsButton = document.querySelector('#settingsPanel .close-btn');
-
-        if (settingsPanel && settingsButton &&
-            !settingsPanel.contains(e.target) &&
-            !settingsButton.contains(e.target)) {
-            settingsPanel.classList.remove('show');
-        }
-
-        // 关闭历史记录面板
-        const historyPanel = document.querySelector('#historyPanel.show');
-        const historyButton = document.querySelector('#historyPanel .close-btn');
-
-        if (historyPanel && historyButton &&
-            !historyPanel.contains(e.target) &&
-            !historyButton.contains(e.target)) {
-            historyPanel.classList.remove('show');
-        }
-    });
-
     // 黄色内容过滤开关事件绑定
     const yellowFilterToggle = document.getElementById('yellowFilterToggle');
     if (yellowFilterToggle) {
@@ -558,6 +535,10 @@ function setupEventListeners() {
                 // 添加成人API列表
                 addAdultAPI();
             }
+
+            // 更新开关外观
+            updateToggleAppearance(yellowFilterToggle);            // 警告提示处理（如果开关关闭，显示警告）
+            checkAdultAPIsSelected();
         });
     }
 
@@ -566,6 +547,9 @@ function setupEventListeners() {
     if (adFilterToggle) {
         adFilterToggle.addEventListener('change', function (e) {
             localStorage.setItem(PLAYER_CONFIG.adFilteringStorage, e.target.checked);
+            
+            // 更新开关外观
+            updateToggleAppearance(adFilterToggle);
         });
     }
 }
@@ -585,12 +569,10 @@ function resetSearchArea() {
     const footer = document.querySelector('.footer');
     if (footer) {
         footer.style.position = '';
-    }
-
-    // 如果有豆瓣功能，检查是否需要显示豆瓣推荐区域
-    if (typeof updateDoubanVisibility === 'function') {
-        updateDoubanVisibility();
-    }
+    }    // 如果有豆瓣功能，检查是否需要显示豆瓣推荐区域（已移除，现在豆瓣有独立界面）
+    // if (typeof updateDoubanVisibility === 'function') {
+    //     updateDoubanVisibility();
+    // }
 
     // 重置URL为主页
     try {
@@ -998,6 +980,53 @@ function playVideo(url, vod_name, sourceCode, episodeIndex = 0, vodId = '') {
         }
     }
 
+    // 保存当前播放信息到localStorage
+    localStorage.setItem('currentVideoUrl', url);
+    localStorage.setItem('currentVideoTitle', vod_name);
+    
+    // 保存观看历史
+    saveViewingHistory(vod_name, url, sourceCode, episodeIndex, vodId);
+    
+    // 给用户选择：在当前页面播放还是新窗口播放
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-[#191919] rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 class="text-xl font-bold text-white mb-4">选择播放方式</h3>
+            <p class="text-gray-300 mb-6">《${vod_name}》</p>
+            <div class="flex flex-col gap-3">
+                <button onclick="playInCurrentPage('${url.replace(/'/g, "\\'")}', '${vod_name.replace(/'/g, "\\'")}'); document.body.removeChild(this.closest('.fixed'))" 
+                        class="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                    在当前页面播放
+                </button>
+                <button onclick="playInNewWindow('${url.replace(/'/g, "\\'")}', '${vod_name.replace(/'/g, "\\'")}', '${sourceCode}', ${episodeIndex}, '${vodId}'); document.body.removeChild(this.closest('.fixed'))" 
+                        class="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                    在新窗口播放
+                </button>
+                <button onclick="document.body.removeChild(this.closest('.fixed'))" 
+                        class="w-full px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                    取消
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+// 在当前页面播放
+function playInCurrentPage(url, title) {
+    // 切换到播放器界面
+    switchView('player');
+    
+    // 延迟一下确保界面切换完成
+    setTimeout(() => {
+        showEmbeddedPlayer(url, title);
+    }, 100);
+}
+
+// 在新窗口播放
+function playInNewWindow(url, vod_name, sourceCode, episodeIndex, vodId) {
     // 获取当前路径作为返回页面
     let currentPath = window.location.href;
 
@@ -1022,8 +1051,8 @@ function playVideo(url, vod_name, sourceCode, episodeIndex = 0, vodId = '') {
         console.error('保存播放状态失败:', e);
     }
 
-    // 在当前标签页中打开播放页面
-    window.location.href = watchUrl;
+    // 在新标签页中打开播放页面
+    window.open(watchUrl, '_blank');
 }
 
 // 弹出播放器页面
@@ -1093,266 +1122,81 @@ function handlePlayerError() {
     showToast('视频播放加载失败，请尝试其他视频源', 'error');
 }
 
-// 辅助函数用于渲染剧集按钮（使用当前的排序状态）
-function renderEpisodes(vodName, sourceCode, vodId) {
-    const episodes = episodesReversed ? [...currentEpisodes].reverse() : currentEpisodes;
-    return episodes.map((episode, index) => {
-        // 根据倒序状态计算真实的剧集索引
-        const realIndex = episodesReversed ? currentEpisodes.length - 1 - index : index;
-        return `
-            <button id="episode-${realIndex}" onclick="playVideo('${episode}','${vodName.replace(/"/g, '&quot;')}', '${sourceCode}', ${realIndex}, '${vodId}')" 
-                    class="px-4 py-2 bg-[#222] hover:bg-[#333] border border-[#333] rounded-lg transition-colors text-center episode-btn">
-                ${realIndex + 1}
+// 显示嵌入式播放器
+function showEmbeddedPlayer(videoUrl, videoTitle) {
+    const playerContainer = document.getElementById('playerContainer');
+    if (!playerContainer) return;
+    
+    playerContainer.innerHTML = `
+        <div class="player-header flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-white">${videoTitle}</h3>
+            <button onclick="closeEmbeddedPlayer()" class="text-gray-400 hover:text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
             </button>
-        `;
-    }).join('');
+        </div>
+        <div class="relative bg-black rounded-lg overflow-hidden" style="aspect-ratio: 16/9;">
+            <iframe 
+                src="/player.html?url=${encodeURIComponent(videoUrl)}" 
+                class="w-full h-full border-0" 
+                allowfullscreen>
+            </iframe>
+        </div>
+        <div class="mt-4 flex gap-4">
+            <button onclick="openPlayerInNewTab('${videoUrl}', '${videoTitle}')" 
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                在新窗口打开
+            </button>
+            <button onclick="showPlayerControls()" 
+                    class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                播放控制
+            </button>
+        </div>
+    `;
 }
 
-// 复制视频链接到剪贴板
-function copyLinks() {
-    const episodes = episodesReversed ? [...currentEpisodes].reverse() : currentEpisodes;
-    const linkList = episodes.join('\r\n');
-    navigator.clipboard.writeText(linkList).then(() => {
-        showToast('播放链接已复制', 'success');
-    }).catch(err => {
-        showToast('复制失败，请检查浏览器权限', 'error');
-    });
-}
-
-// 切换排序状态的函数
-function toggleEpisodeOrder(sourceCode, vodId) {
-    episodesReversed = !episodesReversed;
-    // 重新渲染剧集区域，使用 currentVideoTitle 作为视频标题
-    const episodesGrid = document.getElementById('episodesGrid');
-    if (episodesGrid) {
-        episodesGrid.innerHTML = renderEpisodes(currentVideoTitle, sourceCode, vodId);
-    }
-
-    // 更新按钮文本和箭头方向
-    const toggleBtn = document.querySelector(`button[onclick="toggleEpisodeOrder('${sourceCode}', '${vodId}')"]`);
-    if (toggleBtn) {
-        toggleBtn.querySelector('span').textContent = episodesReversed ? '正序排列' : '倒序排列';
-        const arrowIcon = toggleBtn.querySelector('svg');
-        if (arrowIcon) {
-            arrowIcon.style.transform = episodesReversed ? 'rotate(180deg)' : 'rotate(0deg)';
-        }
-    }
-}
-
-// 从URL导入配置
-async function importConfigFromUrl() {
-    // 创建模态框元素
-    let modal = document.getElementById('importUrlModal');
-    if (modal) {
-        document.body.removeChild(modal);
-    }
-
-    modal = document.createElement('div');
-    modal.id = 'importUrlModal';
-    modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-40';
-
-    modal.innerHTML = `
-        <div class="bg-[#191919] rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto relative">
-            <button id="closeUrlModal" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl">&times;</button>
-            
-            <h3 class="text-xl font-bold mb-4">从URL导入配置</h3>
-            
-            <div class="mb-4">
-                <input type="text" id="configUrl" placeholder="输入配置文件URL" 
-                       class="w-full px-3 py-2 bg-[#222] border border-[#333] rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500">
+// 显示播放器空状态
+function showPlayerEmptyState() {
+    const playerContainer = document.getElementById('playerContainer');
+    if (!playerContainer) return;
+    
+    playerContainer.innerHTML = `
+        <div class="text-center py-16">
+            <div class="flex items-center justify-center mb-6">
+                <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293H15M6 20l4-16m4 16l4-16"></path>
+                </svg>
             </div>
-            
-            <div class="flex justify-end space-x-2">
-                <button id="confirmUrlImport" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">导入</button>
-                <button id="cancelUrlImport" class="bg-[#444] hover:bg-[#555] text-white px-4 py-2 rounded">取消</button>
+            <h3 class="text-2xl font-bold text-white mb-4">播放器</h3>
+            <p class="text-gray-400 mb-8">从搜索结果或豆瓣热门中选择视频进行播放</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <button onclick="switchView('search')" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg transition-all duration-300 shadow-md hover:shadow-lg">
+                    去搜索视频
+                </button>
+                <button onclick="switchView('douban')" class="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg transition-all duration-300 shadow-md hover:shadow-lg">
+                    浏览豆瓣热门
+                </button>
             </div>
-        </div>`;
-
-    document.body.appendChild(modal);
-
-    // 关闭按钮事件
-    document.getElementById('closeUrlModal').addEventListener('click', () => {
-        document.body.removeChild(modal);
-    });
-
-    // 取消按钮事件
-    document.getElementById('cancelUrlImport').addEventListener('click', () => {
-        document.body.removeChild(modal);
-    });
-
-    // 确认导入按钮事件
-    document.getElementById('confirmUrlImport').addEventListener('click', async () => {
-        const url = document.getElementById('configUrl').value.trim();
-        if (!url) {
-            showToast('请输入配置文件URL', 'warning');
-            return;
-        }
-
-        // 验证URL格式
-        try {
-            const urlObj = new URL(url);
-            if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
-                showToast('URL必须以http://或https://开头', 'warning');
-                return;
-            }
-        } catch (e) {
-            showToast('URL格式不正确', 'warning');
-            return;
-        }
-
-        showLoading('正在从URL导入配置...');
-
-        try {
-            // 获取配置文件 - 直接请求URL
-            const response = await fetch(url, {
-                mode: 'cors',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
-            if (!response.ok) throw '获取配置文件失败';
-
-            // 验证响应内容类型
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                throw '响应不是有效的JSON格式';
-            }
-
-            const config = await response.json();
-            if (config.name !== 'LibreTV-Settings') throw '配置文件格式不正确';
-
-            // 验证哈希
-            const dataHash = await sha256(JSON.stringify(config.data));
-            if (dataHash !== config.hash) throw '配置文件哈希值不匹配';
-
-            // 导入配置
-            for (let item in config.data) {
-                localStorage.setItem(item, config.data[item]);
-            }
-
-            showToast('配置文件导入成功，3 秒后自动刷新本页面。', 'success');
-            setTimeout(() => {
-                window.location.reload();
-            }, 3000);
-        } catch (error) {
-            const message = typeof error === 'string' ? error : '导入配置失败';
-            showToast(`从URL导入配置出错 (${message})`, 'error');
-        } finally {
-            hideLoading();
-            document.body.removeChild(modal);
-        }
-    });
-
-    // 点击模态框外部关闭
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            document.body.removeChild(modal);
-        }
-    });
+        </div>
+    `;
 }
 
-// 配置文件导入功能
-async function importConfig() {
-    showImportBox(async (file) => {
-        try {
-            // 检查文件类型
-            if (!(file.type === 'application/json' || file.name.endsWith('.json'))) throw '文件类型不正确';
-
-            // 检查文件大小
-            if (file.size > 1024 * 1024 * 10) throw new Error('文件大小超过 10MB');
-
-            // 读取文件内容
-            const content = await new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = () => reject('文件读取失败');
-                reader.readAsText(file);
-            });
-
-            // 解析并验证配置
-            const config = JSON.parse(content);
-            if (config.name !== 'LibreTV-Settings') throw '配置文件格式不正确';
-
-            // 验证哈希
-            const dataHash = await sha256(JSON.stringify(config.data));
-            if (dataHash !== config.hash) throw '配置文件哈希值不匹配';
-
-            // 导入配置
-            for (let item in config.data) {
-                localStorage.setItem(item, config.data[item]);
-            }
-
-            showToast('配置文件导入成功，3 秒后自动刷新本页面。', 'success');
-            setTimeout(() => {
-                window.location.reload();
-            }, 3000);
-        } catch (error) {
-            const message = typeof error === 'string' ? error : '配置文件格式错误';
-            showToast(`配置文件读取出错 (${message})`, 'error');
-        }
-    });
+// 关闭嵌入式播放器
+function closeEmbeddedPlayer() {
+    localStorage.removeItem('currentVideoUrl');
+    localStorage.removeItem('currentVideoTitle');
+    showPlayerEmptyState();
 }
 
-// 配置文件导出功能
-async function exportConfig() {
-    // 存储配置数据
-    const config = {};
-    const items = {};
-
-    const settingsToExport = [
-        'selectedAPIs',
-        'customAPIs',
-        'yellowFilterEnabled',
-        'adFilteringEnabled',
-        'doubanEnabled',
-        'hasInitializedDefaults'
-    ];
-
-    // 导出设置项
-    settingsToExport.forEach(key => {
-        const value = localStorage.getItem(key);
-        if (value !== null) {
-            items[key] = value;
-        }
-    });
-
-    // 导出历史记录
-    const viewingHistory = localStorage.getItem('viewingHistory');
-    if (viewingHistory) {
-        items['viewingHistory'] = viewingHistory;
-    }
-
-    const searchHistory = localStorage.getItem(SEARCH_HISTORY_KEY);
-    if (searchHistory) {
-        items[SEARCH_HISTORY_KEY] = searchHistory;
-    }
-
-    const times = Date.now().toString();
-    config['name'] = 'LibreTV-Settings';  // 配置文件名，用于校验
-    config['time'] = times;               // 配置文件生成时间
-    config['cfgVer'] = '1.0.0';           // 配置文件版本
-    config['data'] = items;               // 配置文件数据
-    config['hash'] = await sha256(JSON.stringify(config['data']));  // 计算数据的哈希值，用于校验
-
-    // 将配置数据保存为 JSON 文件
-    saveStringAsFile(JSON.stringify(config), 'LibreTV-Settings_' + times + '.json');
+// 在新标签页打开播放器
+function openPlayerInNewTab(videoUrl, videoTitle) {
+    const playerUrl = `/player.html?url=${encodeURIComponent(videoUrl)}&title=${encodeURIComponent(videoTitle)}`;
+    window.open(playerUrl, '_blank');
 }
 
-// 将字符串保存为文件
-function saveStringAsFile(content, fileName) {
-    // 创建Blob对象并指定类型
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    // 生成临时URL
-    const url = window.URL.createObjectURL(blob);
-    // 创建<a>标签并触发下载
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    // 清理临时对象
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+// 显示播放控制
+function showPlayerControls() {
+    // 这里可以添加播放控制相关的功能
+    showToast('播放控制功能开发中...', 'info');
 }
-
-// 移除Node.js的require语句，因为这是在浏览器环境中运行的
