@@ -558,5 +558,4 @@ class SearchComponent {
     }
 }
 
-// 创建全局搜索实例
-window.search = new SearchComponent();
+// 搜索组件将在主初始化脚本中创建

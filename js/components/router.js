@@ -117,5 +117,4 @@ class Router {
     }
 }
 
-// 创建全局路由实例
-window.router = new Router();
+// 路由器将在主初始化脚本中创建

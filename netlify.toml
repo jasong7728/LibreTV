@@ -10,12 +10,6 @@
   function = "inject-env"
   path = "/*"
 
-# 配置重写规则，默认主页重定向到V2版本
-[[redirects]]
-  from = "/"
-  to = "/index-v2.html"
-  status = 200
-
 # 配置重写规则，将 /proxy/* 的请求路由到 proxy 函数
 # 这样前端的 PROXY_URL 仍然可以是 '/proxy/'
 [[redirects]]
