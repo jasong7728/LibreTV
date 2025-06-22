@@ -635,6 +635,7 @@ async function search() {
             return;
         }
     }
+    
     const query = document.getElementById('searchInput').value.trim();
 
     if (!query) {
@@ -647,20 +648,42 @@ async function search() {
         return;
     }
 
-    showLoading();
+    // 使用增强的加载状态管理
+    LoadingStateManager.show('search', `正在搜索 "${query}"...`);
+    
+    // 性能监控开始
+    if (typeof PerformanceMonitor !== 'undefined') {
+        PerformanceMonitor.mark('search_start');
+    }
 
     try {
         // 保存搜索历史
         saveSearchHistory(query);
 
+        // 检查网络状态
+        if (typeof NetworkUtils !== 'undefined' && !NetworkUtils.isOnline()) {
+            throw new Error('网络连接不可用，请检查网络设置');
+        }
+
         // 从所有选中的API源搜索
         let allResults = [];
-        const searchPromises = selectedAPIs.map(apiId => 
-            searchByAPIAndKeyWord(apiId, query)
-        );
+        const searchPromises = selectedAPIs.map(async (apiId) => {
+            try {
+                const results = await searchByAPIAndKeyWord(apiId, query);
+                return results || [];
+            } catch (error) {
+                console.warn(`API ${apiId} 搜索失败:`, error);
+                return [];
+            }
+        });
 
-        // 等待所有搜索请求完成
-        const resultsArray = await Promise.all(searchPromises);
+        // 等待所有搜索请求完成，设置超时保护
+        const resultsArray = await Promise.race([
+            Promise.all(searchPromises),
+            new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('搜索超时')), 15000)
+            )
+        ]);
 
         // 合并所有结果
         resultsArray.forEach(results => {
@@ -668,6 +691,11 @@ async function search() {
                 allResults = allResults.concat(results);
             }
         });
+
+        // 性能监控
+        if (typeof PerformanceMonitor !== 'undefined') {
+            PerformanceMonitor.measure('搜索完成', 'search_start');
+        }
 
         // 对搜索结果进行排序：按名称优先，名称相同时按接口源排序
         allResults.sort((a, b) => {
@@ -696,9 +724,7 @@ async function search() {
             doubanArea.classList.add('hidden');
         }
 
-        const resultsDiv = document.getElementById('results');
-
-        // 如果没有结果
+        const resultsDiv = document.getElementById('results');        // 如果没有结果
         if (!allResults || allResults.length === 0) {
             resultsDiv.innerHTML = `
                 <div class="col-span-full text-center py-16">
@@ -708,9 +734,12 @@ async function search() {
                     </svg>
                     <h3 class="mt-2 text-lg font-medium text-gray-400">没有找到匹配的结果</h3>
                     <p class="mt-1 text-sm text-gray-500">请尝试其他关键词或更换数据源</p>
+                    <button onclick="search()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        重新搜索
+                    </button>
                 </div>
             `;
-            hideLoading();
+            LoadingStateManager.hide('search');
             return;
         }
 
@@ -810,16 +839,42 @@ async function search() {
             `;
         }).join('');
 
-        resultsDiv.innerHTML = safeResults;
-    } catch (error) {
+        resultsDiv.innerHTML = safeResults;    } catch (error) {
         console.error('搜索错误:', error);
-        if (error.name === 'AbortError') {
-            showToast('搜索请求超时，请检查网络连接', 'error');
-        } else {
-            showToast('搜索请求失败，请稍后重试', 'error');
+        
+        // 使用增强的错误处理
+        let errorMessage = '搜索失败，请稍后重试';
+        if (typeof NetworkUtils !== 'undefined') {
+            errorMessage = NetworkUtils.formatError(error);
+        } else if (error.name === 'AbortError') {
+            errorMessage = '搜索请求超时，请检查网络连接';
+        } else if (error.message.includes('超时')) {
+            errorMessage = '搜索超时，请稍后重试';
+        } else if (error.message.includes('网络')) {
+            errorMessage = error.message;
+        }
+        
+        showToast(errorMessage, 'error');
+        
+        // 显示重试按钮
+        const resultsDiv = document.getElementById('results');
+        if (resultsDiv) {
+            resultsDiv.innerHTML = `
+                <div class="col-span-full text-center py-16">
+                    <svg class="mx-auto h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <h3 class="mt-2 text-lg font-medium text-red-400">搜索失败</h3>
+                    <p class="mt-1 text-sm text-gray-500">${errorMessage}</p>
+                    <button onclick="search()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        重新搜索
+                    </button>
+                </div>
+            `;
         }
     } finally {
-        hideLoading();
+        LoadingStateManager.hide('search');
     }
 }
 
@@ -997,13 +1052,17 @@ async function showDetails(vod_id, vod_name, sourceCode) {
                 </div>`}
             </div>
         `;
-        
-    } catch (error) {
+          } catch (error) {
         console.error('获取详情失败:', error);
         
+        // 使用增强的错误处理
         let errorMessage = '获取详情失败';
-        if (error.name === 'AbortError') {
+        if (typeof NetworkUtils !== 'undefined') {
+            errorMessage = NetworkUtils.formatError(error);
+        } else if (error.name === 'AbortError') {
             errorMessage = '请求超时，请稍后重试';
+        } else if (error.message.includes('网络')) {
+            errorMessage = error.message;
         } else if (error.message) {
             errorMessage = error.message;
         }
@@ -1014,11 +1073,21 @@ async function showDetails(vod_id, vod_name, sourceCode) {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
                 <p class="text-red-400 mb-4">${errorMessage}</p>
-                <button onclick="closeModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded">
-                    关闭
-                </button>
+                <div class="flex gap-2 justify-center">
+                    <button onclick="showDetails('${vod_id}', '${vod_name}', '${sourceCode}')" 
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors">
+                        重试
+                    </button>
+                    <button onclick="closeModal()" 
+                            class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors">
+                        关闭
+                    </button>
+                </div>
             </div>
         `;
+        
+        // 显示toast提示
+        showToast(errorMessage, 'error');
     }
 }
 
@@ -1132,90 +1201,228 @@ function playVideo(videoUrl, videoTitle, sourceCode, episodeIndex, vod_id) {
     }
 }
 
-// 添加错误重试机制
-function retryOnError(fn, maxRetries = 3, delay = 1000) {
-    return new Promise((resolve, reject) => {
-        let retries = 0;
+// Enhanced error handling and user experience utilities
+const NetworkUtils = {
+    // 网络状态检查
+    isOnline() {
+        return navigator.onLine;
+    },
+
+    // 检查API响应是否有效
+    validateResponse(response) {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response;
+    },
+
+    // 带重试的fetch封装
+    async fetchWithRetry(url, options = {}, maxRetries = 3) {
+        const { timeout = 10000, ...fetchOptions } = options;
         
-        function attempt() {
-            fn().then(resolve).catch(error => {
-                retries++;
-                if (retries >= maxRetries) {
-                    reject(error);
-                } else {
-                    console.warn(`重试第 ${retries} 次，延迟 ${delay}ms...`);
-                    setTimeout(attempt, delay * retries); // 递增延迟
+        for (let i = 0; i <= maxRetries; i++) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeout);
+                
+                const response = await fetch(url, {
+                    ...fetchOptions,
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                return this.validateResponse(response);
+                
+            } catch (error) {
+                if (i === maxRetries) {
+                    if (error.name === 'AbortError') {
+                        throw new Error('请求超时，请检查网络连接');
+                    } else if (!this.isOnline()) {
+                        throw new Error('网络连接不可用，请检查网络设置');
+                    } else {
+                        throw error;
+                    }
                 }
-            });
+                
+                // 等待一段时间后重试
+                await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+            }
+        }
+    },
+
+    // 格式化错误信息
+    formatError(error) {
+        if (error.name === 'AbortError') {
+            return '请求超时，请稍后重试';
+        } else if (error.message.includes('Failed to fetch')) {
+            return '网络连接失败，请检查网络设置';
+        } else if (error.message.includes('404')) {
+            return '请求的资源不存在';
+        } else if (error.message.includes('500')) {
+            return '服务器内部错误，请稍后重试';
+        } else {
+            return error.message || '未知错误';
+        }
+    }
+};
+
+// 加载状态管理
+const LoadingManager = {
+    activeLoaders: new Set(),
+    
+    show(id, message = '加载中...') {
+        this.activeLoaders.add(id);
+        
+        if (typeof showLoading === 'function') {
+            showLoading(message);
+        } else if (typeof showToast === 'function') {
+            showToast(message, 'info');
+        }
+    },
+    
+    hide(id) {
+        this.activeLoaders.delete(id);
+        
+        if (this.activeLoaders.size === 0 && typeof hideLoading === 'function') {
+            hideLoading();
+        }
+    },
+    
+    isLoading() {
+        return this.activeLoaders.size > 0;
+    }
+};
+
+// Performance monitoring
+const PerformanceMonitor = {
+    markers: new Map(),
+    
+    mark(name) {
+        this.markers.set(name, performance.now());
+    },
+    
+    measure(name, startMark) {
+        const startTime = this.markers.get(startMark);
+        if (startTime) {
+            const duration = performance.now() - startTime;
+            console.log(`[Performance] ${name}: ${duration.toFixed(2)}ms`);
+            return duration;
+        }
+        return 0;
+    }
+};
+
+// Global loading state management
+window.LoadingStateManager = {
+    activeLoaders: new Set(),
+    loadingElement: null,
+    
+    init() {
+        // 创建全局加载提示元素
+        if (!this.loadingElement) {
+            this.loadingElement = document.createElement('div');
+            this.loadingElement.className = 'loading-overlay';
+            this.loadingElement.innerHTML = `
+                <div class="loading-content">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">加载中...</div>
+                </div>
+            `;
+            this.loadingElement.style.display = 'none';
+            document.body.appendChild(this.loadingElement);
+        }
+    },
+    
+    show(id, message = '加载中...') {
+        this.init();
+        this.activeLoaders.add(id);
+        
+        const textElement = this.loadingElement.querySelector('.loading-text');
+        if (textElement) {
+            textElement.textContent = message;
         }
         
-        attempt();
-    });
-}
-
-// 优化的搜索防抖功能
-function createDebouncer(fn, delay = 300) {
-    let timeoutId;
-    return function (...args) {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => fn.apply(this, args), delay);
-    };
-}
-
-// 添加快捷键提示
-function showShortcutHelp() {
-    const helpModal = document.createElement('div');
-    helpModal.className = 'fixed inset-0 bg-black/95 flex items-center justify-center z-50';
-    helpModal.innerHTML = `
-        <div class="bg-[#111] p-8 rounded-lg border border-[#333] max-w-md w-full mx-4">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold gradient-text">快捷键帮助</h3>
-                <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
-            </div>
-            <div class="space-y-3 text-sm">
-                <div class="flex justify-between">
-                    <span class="text-gray-400">空格键</span>
-                    <span class="text-white">播放/暂停</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-400">← →</span>
-                    <span class="text-white">快退/快进 (10秒)</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-400">↑ ↓</span>
-                    <span class="text-white">音量增减</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-400">F</span>
-                    <span class="text-white">全屏切换</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-400">M</span>
-                    <span class="text-white">静音切换</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-400">N</span>
-                    <span class="text-white">下一集</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-400">P</span>
-                    <span class="text-white">上一集</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-400">H</span>
-                    <span class="text-white">显示此帮助</span>
-                </div>
-            </div>            <div class="mt-6 pt-4 border-t border-[#333] text-xs text-gray-500 text-center">
-                提示：在播放器界面按 H 键可随时查看快捷键
-            </div>
-        </div>
-    `;
-    document.body.appendChild(helpModal);
+        this.loadingElement.style.display = 'flex';
+        
+        // 防止长时间加载
+        setTimeout(() => {
+            if (this.activeLoaders.has(id)) {
+                this.hide(id);
+                if (typeof showToast === 'function') {
+                    showToast('加载超时，请稍后重试', 'warning');
+                }
+            }
+        }, 15000);
+    },
     
-    // 点击外部关闭
-    helpModal.addEventListener('click', (e) => {
-        if (e.target === helpModal) {
-            helpModal.remove();
+    hide(id) {
+        this.activeLoaders.delete(id);
+        
+        if (this.activeLoaders.size === 0 && this.loadingElement) {
+            this.loadingElement.style.display = 'none';
         }
-    });
+    },
+    
+    isLoading() {
+        return this.activeLoaders.size > 0;
+    }
+};
+
+// Enhanced showLoading and hideLoading functions
+window.showLoading = function(message = '加载中...') {
+    LoadingStateManager.show('global', message);
+};
+
+window.hideLoading = function() {
+    LoadingStateManager.hide('global');
+};
+
+// Performance monitoring utilities
+window.PerformanceUtils = {
+    // 监控长任务
+    observeLongTasks() {
+        if ('PerformanceObserver' in window) {
+            const observer = new PerformanceObserver((list) => {
+                list.getEntries().forEach((entry) => {
+                    if (entry.duration > 50) { // 超过50ms的任务
+                        console.warn(`长任务检测: ${entry.name}, 耗时: ${entry.duration.toFixed(2)}ms`);
+                    }
+                });
+            });
+            
+            try {
+                observer.observe({ entryTypes: ['longtask'] });
+            } catch (error) {
+                console.warn('长任务监控不支持:', error);
+            }
+        }
+    },
+    
+    // 内存使用监控
+    checkMemoryUsage() {
+        if ('memory' in performance) {
+            const memory = performance.memory;
+            const used = (memory.usedJSHeapSize / 1024 / 1024).toFixed(2);
+            const total = (memory.totalJSHeapSize / 1024 / 1024).toFixed(2);
+            const limit = (memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2);
+            
+            console.log(`内存使用: ${used}MB / ${total}MB (限制: ${limit}MB)`);
+
+            // 内存使用过高时警告
+            if (memory.usedJSHeapSize / memory.jsHeapSizeLimit > 0.8) {
+                console.warn('内存使用率过高，可能影响性能');
+            }
+        }
+    }
+};
+
+// Initialize performance monitoring
+if (typeof window !== 'undefined') {
+    // 初始化性能监控
+    PerformanceUtils.observeLongTasks();
+    
+    // 定期检查内存使用
+    setInterval(() => {
+        PerformanceUtils.checkMemoryUsage();
+    }, 30000); // 每30秒检查一次
 }

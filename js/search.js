@@ -2,6 +2,12 @@ async function searchByAPIAndKeyWord(apiId, query) {
     try {
         let apiUrl, apiName, apiBaseUrl;
         
+        // 检查网络状态
+        if (typeof NetworkUtils !== 'undefined' && !NetworkUtils.isOnline()) {
+            console.warn(`[Search] 网络不可用，跳过API ${apiId}`);
+            return [];
+        }
+        
         // 处理自定义API
         if (apiId.startsWith('custom_')) {
             const customIndex = apiId.replace('custom_', '');
@@ -19,19 +25,28 @@ async function searchByAPIAndKeyWord(apiId, query) {
             apiName = API_SITES[apiId].name;
         }
         
-        // 添加超时处理
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
-        
-        const response = await fetch(PROXY_URL + encodeURIComponent(apiUrl), {
-            headers: API_CONFIG.search.headers,
-            signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-            return [];
+        // 使用增强的网络请求
+        let response;
+        if (typeof NetworkUtils !== 'undefined') {
+            response = await NetworkUtils.fetchWithRetry(PROXY_URL + encodeURIComponent(apiUrl), {
+                headers: API_CONFIG.search.headers,
+                timeout: 8000
+            }, 2); // 最多重试2次
+        } else {
+            // 回退到原始实现
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
+            
+            response = await fetch(PROXY_URL + encodeURIComponent(apiUrl), {
+                headers: API_CONFIG.search.headers,
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
         }
         
         const data = await response.json();
@@ -109,9 +124,19 @@ async function searchByAPIAndKeyWord(apiId, query) {
             });
         }
         
-        return results;
-    } catch (error) {
-        console.warn(`API ${apiId} 搜索失败:`, error);
+        return results;    } catch (error) {
+        const errorMessage = typeof NetworkUtils !== 'undefined' 
+            ? NetworkUtils.formatError(error)
+            : error.message || '搜索失败';
+        
+        console.warn(`API ${apiId} (${apiName || apiId}) 搜索失败:`, errorMessage);
+        
+        // 如果是网络错误，显示友好提示
+        if (typeof showToast === 'function' && 
+            (error.name === 'AbortError' || error.message.includes('Failed to fetch'))) {
+            showToast(`${apiName || apiId} 搜索超时，请稍后重试`, 'warning');
+        }
+        
         return [];
     }
 }

@@ -115,6 +115,9 @@ document.addEventListener('passwordVerified', () => {
 
 // 初始化页面内容
 function initializePageContent() {
+    // 初始化增强的播放器状态管理
+    PlayerStateManager.restoreState();
+    ProgressSyncManager.start();
 
     // 解析URL参数
     const urlParams = new URLSearchParams(window.location.search);
@@ -262,13 +265,27 @@ function initializePageContent() {
                 console.log('页面隐藏时自动暂停视频');
             }
         }
-    });
-
-    // 页面即将卸载时暂停视频
+    });    // 页面即将卸载时暂停视频并清理资源
     window.addEventListener('beforeunload', function() {
+        // 停止进度同步
+        ProgressSyncManager.stop();
+        
+        // 保存最终状态
+        saveCurrentProgress();
+        
         if (art && art.video && !art.video.paused) {
             art.pause();
             console.log('页面卸载时自动暂停视频');
+        }
+        
+        // 清理HLS资源
+        if (currentHls) {
+            try {
+                currentHls.destroy();
+                currentHls = null;
+            } catch (error) {
+                console.warn('清理HLS资源失败:', error);
+            }
         }
     });
 
@@ -460,6 +477,10 @@ function showShortcutHint(text, direction) {
     const textElement = document.getElementById('shortcutText');
     const iconElement = document.getElementById('shortcutIcon');
 
+    if (!hintElement || !textElement || !iconElement) {
+        return; // 安全检查
+    }
+
     // 清除之前的超时
     if (shortcutHintTimeout) {
         clearTimeout(shortcutHintTimeout);
@@ -468,19 +489,51 @@ function showShortcutHint(text, direction) {
     // 设置文本和图标方向
     textElement.textContent = text;
 
-    if (direction === 'left') {
-        iconElement.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>';
-    } else if (direction === 'right') {
-        iconElement.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>';
-    }  else if (direction === 'up') {
-        iconElement.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>';
-    } else if (direction === 'down') {
-        iconElement.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>';
-    } else if (direction === 'fullscreen') {
-        iconElement.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"></path>';
-    } else if (direction === 'play') {
-        iconElement.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3l14 9-14 9V3z"></path>';
+    // 根据不同操作设置不同的图标和颜色
+    let iconSvg = '';
+    let hintClass = 'shortcut-hint-default';
+
+    switch (direction) {
+        case 'left':
+            iconSvg = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>';
+            hintClass = 'shortcut-hint-navigation';
+            break;
+        case 'right':
+            iconSvg = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>';
+            hintClass = 'shortcut-hint-navigation';
+            break;
+        case 'up':
+            iconSvg = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>';
+            hintClass = 'shortcut-hint-volume';
+            break;
+        case 'down':
+            iconSvg = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>';
+            hintClass = 'shortcut-hint-volume';
+            break;
+        case 'fullscreen':
+            iconSvg = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"></path>';
+            hintClass = 'shortcut-hint-control';
+            break;
+        case 'play':
+            iconSvg = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3l14 9-14 9V3z"></path>';
+            hintClass = 'shortcut-hint-control';
+            break;
+        case 'volume':
+            iconSvg = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07"></path>';
+            hintClass = 'shortcut-hint-volume';
+            break;
+        case 'seek':
+            iconSvg = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>';
+            hintClass = 'shortcut-hint-seek';
+            break;
+        default:
+            iconSvg = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
     }
+
+    iconElement.innerHTML = iconSvg;
+    
+    // 重置类名并添加新的样式类
+    hintElement.className = `shortcut-hint ${hintClass}`;
 
     // 显示提示
     hintElement.classList.add('show');
@@ -747,11 +800,50 @@ function initPlayer(videoUrl) {
     function handleMouseEnter() {
         isMouseActive = true;
         resetHideTimer();
-    }
-
-    // 播放器加载完成后初始隐藏工具栏
+    }    // 播放器加载完成后初始隐藏工具栏
     art.on('ready', () => {
         art.controls.classList.add('art-controls-hide');
+        
+        // 初始化增强的播放器状态
+        PlayerStateManager.updateState({
+            isPlaying: false,
+            currentTime: 0,
+            duration: art.duration || 0,
+            volume: art.volume,
+            muted: art.muted,
+            playbackRate: art.playbackRate
+        });
+    });
+
+    // 播放状态变化监听
+    art.on('play', () => {
+        PlayerStateManager.updateState({ isPlaying: true });
+    });
+
+    art.on('pause', () => {
+        PlayerStateManager.updateState({ isPlaying: false });
+    });
+
+    art.on('volumechange', () => {
+        PlayerStateManager.updateState({
+            volume: art.volume,
+            muted: art.muted
+        });
+    });
+
+    art.on('ratechange', () => {
+        PlayerStateManager.updateState({
+            playbackRate: art.playbackRate
+        });
+    });
+
+    // 缓冲状态监听
+    art.on('waiting', () => {
+        PlayerStateManager.updateState({ bufferingState: true });
+    });
+
+    art.on('canplay', () => {
+        PlayerStateManager.updateState({ bufferingState: false });
     });
 
     // 全屏模式处理
@@ -873,6 +965,109 @@ function initPlayer(videoUrl) {
         }
     }, 10000);
 }
+
+// Enhanced player state management
+const PlayerStateManager = {
+    state: {
+        isPlaying: false,
+        currentTime: 0,
+        duration: 0,
+        volume: 1.0,
+        muted: false,
+        playbackRate: 1.0,
+        bufferingState: false
+    },
+
+    // 更新播放状态
+    updateState(updates) {
+        Object.assign(this.state, updates);
+        this.saveState();
+        this.notifyStateChange();
+    },
+
+    // 保存状态到localStorage
+    saveState() {
+        try {
+            localStorage.setItem('playerState', JSON.stringify(this.state));
+        } catch (error) {
+            console.warn('Failed to save player state:', error);
+        }
+    },
+
+    // 从localStorage恢复状态
+    restoreState() {
+        try {
+            const saved = localStorage.getItem('playerState');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                Object.assign(this.state, parsed);
+            }
+        } catch (error) {
+            console.warn('Failed to restore player state:', error);
+        }
+    },
+
+    // 通知状态变化
+    notifyStateChange() {
+        // 如果页面在iframe中，通知父页面
+        if (window.self !== window.top) {
+            try {
+                window.parent.postMessage({
+                    type: 'playerStateChanged',
+                    state: this.state
+                }, '*');
+            } catch (error) {
+                console.warn('Failed to notify parent window:', error);
+            }
+        }
+    }
+};
+
+// 播放进度同步增强
+const ProgressSyncManager = {
+    syncInterval: null,
+    lastSyncTime: 0,
+    
+    start() {
+        if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+        }
+        
+        this.syncInterval = setInterval(() => {
+            this.syncProgress();
+        }, 5000); // 每5秒同步一次
+    },
+    
+    stop() {
+        if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+            this.syncInterval = null;
+        }
+    },
+    
+    syncProgress() {
+        if (art && art.video && art.video.currentTime > 0) {
+            const now = Date.now();
+            // 避免过于频繁的同步
+            if (now - this.lastSyncTime < 3000) {
+                return;
+            }
+            
+            this.lastSyncTime = now;
+            
+            PlayerStateManager.updateState({
+                currentTime: art.video.currentTime,
+                duration: art.video.duration || 0,
+                isPlaying: !art.video.paused
+            });
+            
+            // 保存播放进度到历史记录
+            if (typeof saveCurrentProgress === 'function') {
+                saveCurrentProgress();
+            }
+        }
+    }
+};
 
 // 自定义M3U8 Loader用于过滤广告
 class CustomHlsJsLoader extends Hls.DefaultConfig.loader {
