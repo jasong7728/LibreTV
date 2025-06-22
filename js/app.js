@@ -1,15 +1,374 @@
+// LibreTV v2 - SPA主应用脚本
 // 全局变量
 let selectedAPIs = JSON.parse(localStorage.getItem('selectedAPIs') || '["tyyszy","dyttzy", "bfzy", "ruyi"]'); // 默认选中资源
 let customAPIs = JSON.parse(localStorage.getItem('customAPIs') || '[]'); // 存储自定义API列表
 
-// 添加当前播放的集数索引
+// 播放器相关变量
 let currentEpisodeIndex = 0;
-// 添加当前视频的所有集数
 let currentEpisodes = [];
-// 添加当前视频的标题
 let currentVideoTitle = '';
-// 全局变量用于倒序状态
 let episodesReversed = false;
+let currentPlayer = null; // 播放器实例
+
+// SPA状态管理
+let currentView = 'search';
+let doubanCurrentPage = 0;
+let doubanCurrentType = 'movie';
+let doubanCurrentTag = '';
+let doubanResults = [];
+let isDoubanLoading = false;
+
+// SPA视图切换函数
+function showView(viewName) {
+    // 如果当前在播放界面且要切换到其他界面，暂停播放器
+    if (currentView === 'player' && viewName !== 'player' && currentPlayer) {
+        try {
+            // 暂停播放器
+            if (currentPlayer.pause) {
+                currentPlayer.pause();
+            }
+            // 如果是Artplayer实例
+            else if (currentPlayer.video && currentPlayer.video.pause) {
+                currentPlayer.video.pause();
+            }
+            // 如果是全局的art播放器
+            else if (typeof art !== 'undefined' && art && art.pause) {
+                art.pause();
+            }
+            
+            // 保存当前播放进度
+            if (typeof saveCurrentProgress === 'function') {
+                saveCurrentProgress();
+            }
+        } catch (e) {
+            console.warn('暂停播放器失败:', e);
+        }
+    }
+
+    // 隐藏所有视图容器
+    const viewContainers = document.querySelectorAll('.view-container');
+    viewContainers.forEach(container => {
+        container.classList.remove('active');
+    });
+
+    // 移除所有导航项的active状态
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // 显示目标视图
+    const targetView = document.getElementById(`${viewName}-view`);
+    if (targetView) {
+        targetView.classList.add('active');
+    }
+
+    // 添加对应导航项的active状态
+    const targetNavItem = document.querySelector(`[data-view="${viewName}"]`);
+    if (targetNavItem) {
+        targetNavItem.classList.add('active');
+    }
+
+    // 更新当前视图状态
+    currentView = viewName;
+
+    // 根据不同视图执行特定初始化
+    switch (viewName) {
+        case 'search':
+            // 初始化搜索界面
+            if (localStorage.getItem('doubanEnabled') === 'true') {
+                updateDoubanVisibility();
+            }
+            break;
+        
+        case 'douban':
+            // 初始化豆瓣热门
+            if (typeof initDouban === 'function') {
+                initDouban();
+            }
+            break;
+        
+        case 'player':
+            // 初始化播放器界面
+            initPlayerView();
+            break;
+        
+        case 'history':
+            // 加载历史记录
+            if (typeof loadViewingHistory === 'function') {
+                loadViewingHistory();
+            }
+            break;
+        
+        case 'settings':
+            // 初始化设置界面
+            initSettingsView();
+            break;
+        
+        case 'about':
+            // 初始化关于界面
+            initAboutView();
+            break;
+    }
+
+    // 滚动到页面顶部
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// 初始化播放器视图
+function initPlayerView() {
+    const playerContainer = document.getElementById('video-player');
+    const videoInfo = document.getElementById('video-info');
+    
+    if (!currentPlayer && !currentVideoTitle) {
+        // 如果没有正在播放的视频，显示提示信息
+        const placeholder = playerContainer.querySelector('.flex.items-center.justify-center');
+        if (placeholder) {
+            placeholder.style.display = 'flex';
+        }
+        if (videoInfo) {
+            videoInfo.classList.add('hidden');
+        }
+    } else {
+        // 如果有播放器实例，确保正确显示
+        const placeholder = playerContainer.querySelector('.flex.items-center.justify-center');
+        if (placeholder) {
+            placeholder.style.display = 'none';
+        }
+        if (videoInfo) {
+            videoInfo.classList.remove('hidden');
+        }
+    }
+    
+    // 绑定倒序按钮事件
+    const reverseButton = document.getElementById('reverse-episodes');
+    if (reverseButton) {
+        reverseButton.onclick = function() {
+            episodesReversed = !episodesReversed;
+            reverseButton.textContent = episodesReversed ? '正序' : '倒序';
+            showEpisodesContainer(); // 重新渲染剧集列表
+        };
+    }
+    
+    // 绑定自动播放开关事件
+    const autoplayToggle = document.getElementById('autoplay-toggle');
+    if (autoplayToggle) {
+        autoplayToggle.onchange = function() {
+            localStorage.setItem('autoplayEnabled', this.checked);
+        };
+        // 设置当前状态
+        autoplayToggle.checked = localStorage.getItem('autoplayEnabled') !== 'false';
+    }
+}
+
+// 初始化设置视图
+function initSettingsView() {
+    // 更新API复选框状态
+    initAPICheckboxes();
+    
+    // 更新自定义API列表
+    renderCustomAPIsList();
+    
+    // 更新选中的API数量显示
+    updateSelectedApiCount();
+}
+
+// 初始化关于视图
+function initAboutView() {
+    // 更新版本信息
+    const versionElement = document.getElementById('current-version');
+    if (versionElement && typeof SITE_CONFIG !== 'undefined') {
+        versionElement.textContent = SITE_CONFIG.version || 'v2.0.0';
+    }
+    
+    // 更新更新日期
+    const dateElement = document.getElementById('update-date');
+    if (dateElement) {
+        const now = new Date();
+        const formatDate = `${now.getFullYear()}年${now.getMonth() + 1}月`;
+        dateElement.textContent = formatDate;
+    }
+}
+
+// 从搜索或豆瓣结果直接跳转到播放界面的函数
+function playVideoInSPA(url, title, sourceCode, episodeIndex, vodId) {
+    // 设置当前播放信息
+    currentVideoTitle = title;
+    currentEpisodeIndex = episodeIndex || 0;
+    
+    // 切换到播放器视图
+    showView('player');
+    
+    // 更新视频信息
+    updateVideoInfo(title, sourceCode, episodeIndex);
+    
+    // 初始化播放器
+    initializeVideoPlayer(url, title);
+    
+    // 保存到观看历史
+    if (typeof addToViewingHistory === 'function') {
+        const videoInfo = {
+            title: title,
+            url: url,
+            episodeIndex: episodeIndex || 0,
+            timestamp: Date.now(),
+            sourceName: sourceCode,
+            sourceCode: sourceCode,
+            vod_id: vodId,
+            showIdentifier: vodId ? `${sourceCode}_${vodId}` : url
+        };
+        addToViewingHistory(videoInfo);
+    }
+}
+
+// 更新视频信息显示
+function updateVideoInfo(title, sourceCode, episodeIndex) {
+    const videoTitleElement = document.getElementById('video-title');
+    const videoInfoContainer = document.getElementById('video-info');
+    const videoMetaElement = document.getElementById('video-meta');
+    
+    if (videoTitleElement) {
+        videoTitleElement.textContent = title;
+    }
+    
+    if (videoMetaElement) {
+        let metaInfo = '';
+        if (sourceCode) {
+            const sourceName = API_SITES[sourceCode]?.name || sourceCode;
+            metaInfo += `来源: ${sourceName}`;
+        }
+        if (episodeIndex !== undefined && currentEpisodes.length > 1) {
+            metaInfo += metaInfo ? ` · 第${episodeIndex + 1}集` : `第${episodeIndex + 1}集`;
+        }
+        videoMetaElement.textContent = metaInfo;
+    }
+    
+    if (videoInfoContainer) {
+        videoInfoContainer.classList.remove('hidden');
+    }
+    
+    // 如果有多集，显示剧集选择器
+    if (currentEpisodes.length > 1) {
+        showEpisodesContainer();
+    }
+}
+
+// 显示剧集选择容器
+function showEpisodesContainer() {
+    const episodesContainer = document.getElementById('episodes-container');
+    const episodesList = document.getElementById('episodes-list');
+    
+    if (episodesContainer) {
+        episodesContainer.classList.remove('hidden');
+    }
+    
+    if (episodesList && currentEpisodes.length > 0) {
+        const episodes = episodesReversed ? [...currentEpisodes].reverse() : currentEpisodes;
+        episodesList.innerHTML = episodes.map((episode, index) => {
+            const realIndex = episodesReversed ? currentEpisodes.length - 1 - index : index;
+            const isActive = realIndex === currentEpisodeIndex;
+            return `
+                <button 
+                    onclick="playEpisodeInSPA(${realIndex})" 
+                    class="px-3 py-2 text-sm rounded transition-colors ${
+                        isActive 
+                            ? 'bg-pink-600 text-white' 
+                            : 'bg-[#222] hover:bg-[#333] text-gray-300 hover:text-white'
+                    }">
+                    ${realIndex + 1}
+                </button>
+            `;
+        }).join('');
+    }
+}
+
+// SPA中播放指定集数
+function playEpisodeInSPA(episodeIndex) {
+    if (episodeIndex >= 0 && episodeIndex < currentEpisodes.length) {
+        const episodeUrl = currentEpisodes[episodeIndex];
+        currentEpisodeIndex = episodeIndex;
+        
+        // 重新初始化播放器
+        initializeVideoPlayer(episodeUrl, currentVideoTitle);
+        
+        // 更新视频信息显示
+        updateVideoInfo(currentVideoTitle, '', episodeIndex);
+        
+        // 更新观看历史
+        if (typeof addToViewingHistory === 'function') {
+            const videoInfo = {
+                title: currentVideoTitle,
+                url: episodeUrl,
+                episodeIndex: episodeIndex,
+                timestamp: Date.now(),
+                episodes: currentEpisodes
+            };
+            addToViewingHistory(videoInfo);
+        }
+    }
+}
+
+// 初始化视频播放器
+function initializeVideoPlayer(url, title) {
+    const playerContainer = document.getElementById('video-player');
+    if (!playerContainer) return;
+    
+    // 清除之前的播放器内容
+    playerContainer.innerHTML = '';
+    
+    // 创建简单的视频播放器
+    const videoElement = document.createElement('video');
+    videoElement.id = 'main-video-player';
+    videoElement.className = 'w-full h-96 bg-black';
+    videoElement.controls = true;
+    videoElement.preload = 'metadata';
+    videoElement.src = url;
+    
+    // 添加播放器事件监听
+    videoElement.addEventListener('loadedmetadata', function() {
+        console.log('视频元数据加载完成');
+    });
+    
+    videoElement.addEventListener('error', function(e) {
+        console.error('视频加载错误:', e);
+        playerContainer.innerHTML = `
+            <div class="flex items-center justify-center h-96 text-red-400">
+                <div class="text-center">
+                    <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    <p>视频加载失败</p>
+                    <p class="text-sm text-gray-500 mt-2">请尝试其他视频源</p>
+                </div>
+            </div>
+        `;
+    });
+    
+    // 保存播放器实例
+    currentPlayer = videoElement;
+    
+    // 添加到容器
+    playerContainer.appendChild(videoElement);
+    
+    // 尝试播放
+    const playPromise = videoElement.play();
+    if (playPromise !== undefined) {
+        playPromise.catch(error => {
+            console.warn('自动播放被阻止:', error);
+        });
+    }
+}
+
+// 从历史记录播放时自动跳转到播放界面
+function playFromHistoryInSPA(url, title, episodeIndex, playbackPosition) {
+    // 先切换到播放器视图
+    showView('player');
+    
+    // 然后调用原来的播放函数
+    if (typeof playFromHistory === 'function') {
+        playFromHistory(url, title, episodeIndex, playbackPosition);
+    }
+}
 
 // 页面初始化
 document.addEventListener('DOMContentLoaded', function () {
@@ -988,7 +1347,7 @@ async function showDetails(id, vod_name, sourceCode) {
     }
 }
 
-// 更新播放视频函数，修改为使用/watch路径而不是直接打开player.html
+// SPA版本的播放视频函数 - 直接在播放器视图中播放
 function playVideo(url, vod_name, sourceCode, episodeIndex = 0, vodId = '') {
     // 密码保护校验
     if (window.isPasswordProtected && window.isPasswordVerified) {
@@ -998,32 +1357,14 @@ function playVideo(url, vod_name, sourceCode, episodeIndex = 0, vodId = '') {
         }
     }
 
-    // 获取当前路径作为返回页面
-    let currentPath = window.location.href;
-
-    // 构建播放页面URL，使用watch.html作为中间跳转页
-    let watchUrl = `watch.html?id=${vodId || ''}&source=${sourceCode || ''}&url=${encodeURIComponent(url)}&index=${episodeIndex}&title=${encodeURIComponent(vod_name || '')}`;
-
-    // 添加返回URL参数
-    if (currentPath.includes('index.html') || currentPath.endsWith('/')) {
-        watchUrl += `&back=${encodeURIComponent(currentPath)}`;
+    // 使用SPA方式直接跳转到播放界面
+    playVideoInSPA(url, vod_name, sourceCode, episodeIndex, vodId);
+    
+    // 关闭详情弹窗
+    const detailModal = document.getElementById('modal');
+    if (detailModal) {
+        detailModal.classList.add('hidden');
     }
-
-    // 保存当前状态到localStorage
-    try {
-        localStorage.setItem('currentVideoTitle', vod_name || '未知视频');
-        localStorage.setItem('currentEpisodes', JSON.stringify(currentEpisodes));
-        localStorage.setItem('currentEpisodeIndex', episodeIndex);
-        localStorage.setItem('currentSourceCode', sourceCode || '');
-        localStorage.setItem('lastPlayTime', Date.now());
-        localStorage.setItem('lastSearchPage', currentPath);
-        localStorage.setItem('lastPageUrl', currentPath);  // 确保保存返回页面URL
-    } catch (e) {
-        console.error('保存播放状态失败:', e);
-    }
-
-    // 在当前标签页中打开播放页面
-    window.location.href = watchUrl;
 }
 
 // 弹出播放器页面

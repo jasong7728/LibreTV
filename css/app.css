@@ -1,0 +1,566 @@
+/* 
+LibreTV v2 应用样式
+单页面应用专用样式
+*/
+
+/* 侧边栏样式 */
+.sidebar {
+    background: linear-gradient(180deg, #111, #0a0a0a);
+    backdrop-filter: blur(10px);
+    box-shadow: 2px 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.sidebar:hover {
+    box-shadow: 2px 0 30px rgba(0, 0, 0, 0.7);
+}
+
+/* 导航项样式 */
+.nav-item {
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-item.active {
+    background: linear-gradient(135deg, rgba(219, 39, 119, 0.2), rgba(219, 39, 119, 0.1));
+    color: #ec4899;
+    border-right: 3px solid #ec4899;
+}
+
+.nav-item:not(.active):hover {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+}
+
+.nav-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s;
+}
+
+.nav-item:hover::before {
+    left: 100%;
+}
+
+/* 视图容器样式 */
+.view-container {
+    display: none;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: all 0.3s ease-in-out;
+    min-height: 100vh;
+}
+
+.view-container.active {
+    display: block;
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* 主内容区域 */
+.main-content {
+    transition: margin-left 0.3s ease;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .main-content {
+        margin-left: 0 !important;
+    }
+    
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        z-index: 1000;
+    }
+    
+    .sidebar:hover,
+    .sidebar.mobile-open {
+        transform: translateX(0);
+    }
+    
+    .view-container {
+        padding: 1rem;
+    }
+}
+
+/* 播放器特定样式 */
+#video-player video {
+    width: 100%;
+    height: auto;
+    max-height: 70vh;
+    background: #000;
+}
+
+#episodes-list button.active {
+    background: #ec4899;
+    color: white;
+    border-color: #ec4899;
+}
+
+/* 豆瓣热门加载更多按钮样式 */
+#douban-load-more {
+    min-width: 120px;
+    position: relative;
+}
+
+#douban-load-more:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* 历史记录样式增强 */
+.history-item {
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    padding: 1rem;
+    background: linear-gradient(135deg, #1a1a1a, #111);
+    border: 1px solid #333;
+}
+
+.history-item:hover {
+    background: linear-gradient(135deg, #222, #1a1a1a);
+    border-color: #555;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* 渐变文字效果 */
+.gradient-text {
+    background: linear-gradient(135deg, #ec4899, #8b5cf6, #06b6d4);
+    background-size: 200% 200%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradientShift 3s ease infinite;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* 设置界面样式 */
+.settings-section {
+    background: linear-gradient(135deg, #1a1a1a, #111);
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.settings-section h2 {
+    border-bottom: 2px solid #ec4899;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+/* 动画效果 */
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #111;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #ec4899, #8b5cf6);
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #f97316, #ec4899);
+}
+
+/* 搜索标签样式 */
+.search-tag {
+    background: linear-gradient(135deg, #222, #333);
+    border: 1px solid #444;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    color: #f9a8d4;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+}
+
+.search-tag:hover {
+    background: rgba(219, 39, 119, 0.2);
+    border-color: rgba(219, 39, 119, 0.4);
+    transform: translateY(-1px);
+}
+
+/* 豆瓣标签样式 */
+.douban-tag {
+    background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+    border: 1px solid #333;
+    padding: 0.375rem 0.875rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    color: #f9a8d4;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.douban-tag:hover {
+    background: rgba(219, 39, 119, 0.2);
+    border-color: rgba(219, 39, 119, 0.4);
+    transform: translateY(-1px);
+}
+
+.douban-tag.active {
+    background: linear-gradient(135deg, #db2777, #be185d);
+    border-color: #db2777;
+    color: white;
+    box-shadow: 0 4px 12px rgba(219, 39, 119, 0.3);
+}
+
+/* 播放器样式 */
+#video-player {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+/* 剧集选择样式 */
+.episode-btn {
+    background: linear-gradient(135deg, #222, #333);
+    border: 1px solid #444;
+    color: white;
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.episode-btn:hover {
+    background: linear-gradient(135deg, #333, #444);
+    border-color: #ec4899;
+    transform: translateY(-1px);
+}
+
+.episode-btn.active {
+    background: linear-gradient(135deg, #ec4899, #be185d);
+    border-color: #ec4899;
+    box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+}
+
+/* Toast 样式 */
+.toast {
+    background: linear-gradient(135deg, #111, #222);
+    border: 1px solid #333;
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+.toast.success {
+    border-color: #10b981;
+    background: linear-gradient(135deg, #064e3b, #10b981);
+}
+
+.toast.error {
+    border-color: #ef4444;
+    background: linear-gradient(135deg, #7f1d1d, #ef4444);
+}
+
+.toast.info {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+}
+
+.toast.warning {
+    border-color: #f59e0b;
+    background: linear-gradient(135deg, #92400e, #f59e0b);
+}
+
+/* 快捷键提示样式 */
+.shortcut-hint {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #333;
+    font-size: 1.125rem;
+    font-weight: 600;
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+/* 搜索结果网格优化 */
+.search-results-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+@media (max-width: 640px) {
+    .search-results-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 豆瓣内容网格优化 */
+.douban-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
+@media (max-width: 640px) {
+    .douban-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1280px) {
+    .douban-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    }
+}
+
+/* 响应式侧边栏 */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 4rem;
+        transition: width 0.3s ease;
+    }
+    
+    .sidebar.mobile-expanded {
+        width: 16rem;
+    }
+    
+    .main-content {
+        margin-left: 4rem;
+    }
+    
+    .main-content.sidebar-expanded {
+        margin-left: 16rem;
+    }
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #333, #555);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #555, #777);
+}
+
+/* 加载动画优化 */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* 输入框样式优化 */
+input[type="text"], 
+input[type="password"], 
+input[type="url"] {
+    background: linear-gradient(135deg, #222, #333);
+    border: 1px solid #444;
+    transition: all 0.3s ease;
+}
+
+input[type="text"]:focus, 
+input[type="password"]:focus, 
+input[type="url"]:focus {
+    border-color: #ec4899;
+    box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+    background: linear-gradient(135deg, #333, #444);
+}
+
+/* 按钮样式优化 */
+button {
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    transform: translateY(-1px);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* 模态框样式 */
+.modal-content {
+    background: linear-gradient(135deg, #111, #1a1a1a);
+    border: 1px solid #333;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+}
+
+/* 行截断样式 */
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* 图片加载效果 */
+img {
+    transition: opacity 0.3s ease;
+}
+
+img[src=""], img:not([src]) {
+    opacity: 0;
+}
+
+/* 标签管理样式 */
+.tag-manage-item {
+    background: linear-gradient(135deg, #222, #333);
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    margin: 0.25rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.tag-manage-item:hover {
+    background: linear-gradient(135deg, #333, #444);
+    border-color: #ec4899;
+}
+
+.tag-delete-btn {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    padding: 0;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tag-delete-btn:hover {
+    color: #dc2626;
+}
+
+/* 加载更多按钮样式 */
+.load-more-btn {
+    background: linear-gradient(135deg, #ec4899, #be185d);
+    border: none;
+    color: white;
+    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 16px rgba(236, 72, 153, 0.3);
+}
+
+.load-more-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(236, 72, 153, 0.4);
+}
+
+.load-more-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* 空状态样式 */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+    color: #6b7280;
+}
+
+.empty-state svg {
+    width: 4rem;
+    height: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* 移动端优化 */
+@media (max-width: 640px) {
+    .view-container {
+        padding: 1rem;
+    }
+    
+    .sidebar .group:hover span {
+        display: none;
+    }
+    
+    .search-tag {
+        font-size: 0.75rem;
+        padding: 0.125rem 0.5rem;
+    }
+    
+    .douban-tag {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.625rem;
+    }
+}

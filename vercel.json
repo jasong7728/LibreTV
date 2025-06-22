@@ -10,11 +10,19 @@
     },
     {
       "source": "/player.html",
-      "destination": "/player.html"
+      "destination": "/index.html"
     },
     {
       "source": "/player.html/:path*",
-      "destination": "/player.html"
+      "destination": "/index.html"
+    },
+    {
+      "source": "/about.html",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/watch.html",
+      "destination": "/index.html"
     },
     {
       "source": "/:path*",

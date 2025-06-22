@@ -47,7 +47,3 @@ export default async (request, context) => {
     headers: response.headers
   });
 };
-
-export const config = {
-  path: ["/*"]
-};
